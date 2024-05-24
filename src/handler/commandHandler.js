@@ -48,7 +48,6 @@ class CommandHandler {
     }
 
     handleCommand(message) {
-        console.log('HandleCommand function called');
         if (!message.content.startsWith(prefix) || message.author.bot) return;
 
         const args = message.content.slice(prefix.length).trim().split(/ +/);
@@ -77,7 +76,6 @@ class CommandHandler {
 
             if (now < expirationTime) {
                 const timeLeft = (expirationTime - now) / 1000;
-                console.log(`Command ${command.name} is on cooldown for ${timeLeft.toFixed(1)} more second(s)`);
                 return message.reply(`Please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.name}\` command.`);
             }
         }
@@ -86,7 +84,6 @@ class CommandHandler {
         setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
         try {
-            console.log(`Executing command: ${command.name}`);
             command.execute(message, args, this.client, this.commands, this.slashCommands);
         } catch (error) {
             console.error(`Error executing command ${command.name}:`, error);
@@ -95,7 +92,6 @@ class CommandHandler {
     }
 
     async handleSlashCommand(interaction) {
-        console.log('HandleSlashCommand function called');
         if (!interaction.isCommand()) return;
 
         const command = this.slashCommands.get(interaction.commandName);
@@ -129,7 +125,6 @@ class CommandHandler {
         setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
 
         try {
-            console.log(`Executing slash command: ${command.data.name}`);
             await command.executeSlash(interaction, this.client, this.commands, this.slashCommands);
         } catch (error) {
             console.error(`Error executing slash command ${command.data.name}:`, error);
