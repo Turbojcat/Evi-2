@@ -1,11 +1,11 @@
 // src/evi.js
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
-const { token } = require('./config');
+const { token, premiumRoleId } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
-const { setupDatabase } = require('./database/database');
+const { setupDatabase, pool } = require('./database/database');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildPresences] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildPresences, GatewayIntentBits.GuildMembers] });
 
 const commandHandler = new CommandHandler(client);
 
@@ -47,5 +47,37 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
     commandHandler.handleSlashCommand(interaction);
 });
+
+async function getPremiumRoleId(guildId) {
+  const query = 'SELECT role_id FROM premium_role WHERE guild_id = ?';
+  const results = await pool.query(query, [guildId]);
+  return results[0]?.role_id;
+}
+
+client.on('guildMemberUpdate', async (oldMember, newMember) => {
+  const premiumRoleId = await getPremiumRoleId(newMember.guild.id);
+  if (!premiumRoleId) return;
+
+  const hasPremiumRole = newMember.roles.cache.has(premiumRoleId);
+  const hadPremiumRole = oldMember.roles.cache.has(premiumRoleId);
+
+  if (hasPremiumRole && !hadPremiumRole) {
+      // User gained the premium role
+      await addPremiumUser(newMember.guild.id, newMember.id);
+  } else if (!hasPremiumRole && hadPremiumRole) {
+      // User lost the premium role
+      await removePremiumUser(newMember.guild.id, newMember.id);
+  }
+});
+
+async function addPremiumUser(guildId, userId) {
+    const query = 'INSERT INTO premium_users (guild_id, user_id) VALUES (?, ?)';
+    await pool.query(query, [guildId, userId]);
+}
+
+async function removePremiumUser(guildId, userId) {
+    const query = 'DELETE FROM premium_users WHERE guild_id = ? AND user_id = ?';
+    await pool.query(query, [guildId, userId]);
+}
 
 client.login(token);

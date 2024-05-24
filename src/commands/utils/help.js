@@ -2,7 +2,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { prefix } = require('../../config');
+const { prefix, premiumRoleId } = require('../../config');
 
 module.exports = {
     name: 'help',
@@ -35,6 +35,7 @@ module.exports = {
 async function executePrefix(message, args, client, commands, slashCommands) {
     const commandName = args[0];
     const developerIDs = process.env.DEVELOPER_IDS.split(',');
+    const isPremiumUser = message.member.roles.cache.has(premiumRoleId);
 
     if (commandName) {
         const command = commands.get(commandName.toLowerCase()) || commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName.toLowerCase()));
@@ -76,6 +77,10 @@ async function executePrefix(message, args, client, commands, slashCommands) {
             const commandList = commandFiles.map(file => `\`${file.slice(0, -3)}\``).join(', ');
             
             if (folder === 'developer' && !developerIDs.includes(message.author.id)) {
+                continue;
+            }
+            
+            if (folder === 'premium' && !isPremiumUser) {
                 continue;
             }
             
@@ -136,6 +141,7 @@ async function executeSlash(interaction, client, commands, slashCommands) {
     const { options } = interaction;
     const commandName = options.getString('command');
     const developerIDs = process.env.DEVELOPER_IDS.split(',');
+    const isPremiumUser = interaction.member.roles.cache.has(premiumRoleId);
 
     if (commandName) {
         const command = slashCommands.get(commandName.toLowerCase());
@@ -175,6 +181,10 @@ async function executeSlash(interaction, client, commands, slashCommands) {
             const commandList = commandFiles.map(file => `\`${file.slice(0, -3)}\``).join(', ');
             
             if (folder === 'developer' && !developerIDs.includes(interaction.user.id)) {
+                continue;
+            }
+            
+            if (folder === 'premium' && !isPremiumUser) {
                 continue;
             }
             

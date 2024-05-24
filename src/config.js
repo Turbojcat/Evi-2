@@ -4,6 +4,7 @@ module.exports = {
   token: process.env.DISCORD_BOT_TOKEN,
   prefix: '!', // Definer ønsket prefix her
   developerIDs: process.env.DEVELOPER_IDS.split(','),
+  premiumRoleId: process.env.PREMIUM_ROLE_ID,
   dbConfig: {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,

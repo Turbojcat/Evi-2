@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Collection } = require('discord.js');
-const { prefix } = require('../config');
+const { prefix, premiumRoleId } = require('../config');
 
 class CommandHandler {
     constructor(client) {
@@ -63,6 +63,11 @@ class CommandHandler {
 
         console.log(`Found command: ${command.name}`);
 
+        const isPremiumUser = message.member.roles.cache.has(premiumRoleId);
+        if (command.premium && !isPremiumUser) {
+            return message.reply('This command is only available for premium users.');
+        }
+
         if (!this.cooldowns.has(command.name)) {
             this.cooldowns.set(command.name, new Collection());
         }
@@ -102,6 +107,11 @@ class CommandHandler {
         }
 
         console.log(`Found slash command: ${command.data.name}`);
+
+        const isPremiumUser = interaction.member.roles.cache.has(premiumRoleId);
+        if (command.premium && !isPremiumUser) {
+            return interaction.reply({ content: 'This command is only available for premium users.', ephemeral: true });
+        }
 
         if (!this.cooldowns.has(command.data.name)) {
             this.cooldowns.set(command.data.name, new Collection());
