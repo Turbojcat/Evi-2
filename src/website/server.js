@@ -1,16 +1,17 @@
 // src/website/server.js
-const express = require('express');
+/*const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
 const path = require('path');
+const config = require('../config');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Configure session middleware
 app.use(session({
-  secret: 'your-session-secret',
+  secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false
 }));
@@ -29,9 +30,9 @@ passport.deserializeUser((obj, done) => {
 
 // Configure Discord strategy
 passport.use(new DiscordStrategy({
-  clientID: 'YOUR_DISCORD_CLIENT_ID',
-  clientSecret: 'YOUR_DISCORD_CLIENT_SECRET',
-  callbackURL: 'http://localhost:3000/auth/discord/callback',
+  clientID: config.clientId,
+  clientSecret: config.clientSecret,
+  callbackURL: config.callbackUrl,
   scope: ['identify']
 }, (accessToken, refreshToken, profile, done) => {
   // Handle the authenticated user
@@ -86,4 +87,11 @@ app.listen(port, () => {
   console.log(`Website is running on port ${port}`);
 });
 
-module.exports = app;
+module.exports = app;*/
+
+
+
+  //clientId: process.env.CLIENT_ID,
+  //clientSecret: process.env.CLIENT_SECRET,
+  //callbackUrl: process.env.CALLBACK_URL,
+  //sessionSecret: process.env.SESSION_SECRET,

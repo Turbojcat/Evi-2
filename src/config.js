@@ -1,10 +1,14 @@
+// src/config.js
 require('dotenv').config();
 
 module.exports = {
   token: process.env.DISCORD_BOT_TOKEN,
-  prefix: '!', // Definer ønsket prefix her
-  developerIDs: process.env.DEVELOPER_IDS.split(','),
-  premiumRoleId: process.env.PREMIUM_ROLE_ID,
+  prefix: '!',
+  developerIDs: process.env.DEVELOPER_IDS ? process.env.DEVELOPER_IDS.split(',') : [],
+  //clientId: process.env.CLIENT_ID,
+  //clientSecret: process.env.CLIENT_SECRET,
+  //callbackUrl: process.env.CALLBACK_URL,
+  //sessionSecret: process.env.SESSION_SECRET,
   dbConfig: {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
