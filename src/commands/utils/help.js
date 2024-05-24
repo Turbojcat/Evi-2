@@ -3,12 +3,12 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const fs = require('fs');
 const path = require('path');
 const { prefix } = require('../../config');
-const { hasPremiumSubscription } = require('../../database/database');
+const { hasPremiumSubscription, getRolePermissionLevel } = require('../../database/database');
 
 module.exports = {
   name: 'help',
   description: 'Displays the list of available commands or information about a specific command.',
-  usage: '[command]',
+  usage: '[command|category]',
   aliases: ['commands'],
   cooldown: 5,
   permissions: [],
@@ -29,21 +29,26 @@ module.exports = {
     ],
   },
   executeSlash: async (interaction, client, commands, slashCommands) => {
+    console.log('executeSlash function called');
     await executeSlash(interaction, client, commands, slashCommands);
   },
 };
 
 async function executePrefix(message, args, client, commands, slashCommands) {
+  console.log('executePrefix function called');
   const commandName = args[0];
   const developerIDs = process.env.DEVELOPER_IDS.split(',');
   const isPremiumUser = await hasPremiumSubscription(message.author.id);
+  const userPermissionLevel = await getRolePermissionLevel(message.guild.id, message.member.roles.highest.id);
 
   if (commandName) {
     const command = commands.get(commandName.toLowerCase()) || commands.find((cmd) => cmd.aliases && cmd.aliases.includes(commandName.toLowerCase()));
     if (!command) {
+      console.log(`No command found for: ${commandName}`);
       return message.reply(`No information found for command: \`${commandName}\``);
     }
 
+    console.log(`Found command: ${command.name}`);
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle(`Command: ${command.name}`)
@@ -53,6 +58,7 @@ async function executePrefix(message, args, client, commands, slashCommands) {
         { name: 'Aliases', value: command.aliases ? command.aliases.join(', ') : 'None', inline: true },
         { name: 'Cooldown', value: `${command.cooldown || 0} second(s)`, inline: true },
         { name: 'Permissions', value: command.permissions ? command.permissions.join(', ') : 'None', inline: true },
+        { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
         { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
       )
       .setTimestamp();
@@ -74,28 +80,33 @@ async function executePrefix(message, args, client, commands, slashCommands) {
     let currentPage = 0;
 
     for (const folder of commandFolders) {
-      const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter((file) => file.endsWith('.js'));
-      const commandList = commandFiles.map((file) => {
-        const commandName = file.slice(0, -3);
-        const command = commands.get(commandName);
-        const isPremium = command.premium;
-        return `\`${commandName}${isPremium ? '*' : '^'}\``;
-      }).join(', ');
-
       if (folder === 'developer' && !developerIDs.includes(message.author.id)) {
         continue;
       }
 
-      if (embed.data && embed.data.fields && (embed.data.fields.length === 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + 1 === 25))) {
-        pages.push(embed);
-        embed = new EmbedBuilder()
-          .setColor('#0099ff')
-          .setTitle('Command List')
-          .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n* - Premium command\n^ - Free command`)
-          .setTimestamp();
-      }
+      const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter((file) => file.endsWith('.js'));
+      const commandList = commandFiles.map((file) => {
+        const commandName = file.slice(0, -3);
+        const command = commands.get(commandName);
+        if (!command) return null;
+        const isPremium = command.premium;
+        const hasPermission = command.permissionLevel ? command.permissionLevel.includes(userPermissionLevel) : true;
+        command.category = folder; // Legg til kategori basert på mappenavn
+        return hasPermission ? `\`${commandName}${isPremium ? " *" : " ^"}\`` : null;
+      }).filter(Boolean).join(', ');
 
-      embed.addFields({ name: folder.toUpperCase(), value: commandList || 'No commands in this category.' });
+      if (commandList) {
+        if (embed.data && embed.data.fields && (embed.data.fields.length === 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + 1 === 25))) {
+          pages.push(embed);
+          embed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle('Command List')
+            .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n* - Premium command\n^ - Free command`)
+            .setTimestamp();
+        }
+
+        embed.addFields({ name: folder.toUpperCase(), value: commandList });
+      }
     }
 
     embed.addFields({ name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' });
@@ -140,17 +151,21 @@ async function executePrefix(message, args, client, commands, slashCommands) {
 }
 
 async function executeSlash(interaction, client, commands, slashCommands) {
+  console.log('executeSlash function called');
   const { options } = interaction;
   const commandName = options.getString('command');
   const developerIDs = process.env.DEVELOPER_IDS.split(',');
   const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
+  const userPermissionLevel = await getRolePermissionLevel(interaction.guild.id, interaction.member.roles.highest.id);
 
   if (commandName) {
     const command = slashCommands.get(commandName.toLowerCase());
     if (!command) {
+      console.log(`No slash command found for: ${commandName}`);
       return interaction.reply({ content: `No information found for command: \`${commandName}\``, ephemeral: true });
     }
 
+    console.log(`Found slash command: ${command.data.name}`);
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle(`Command: ${command.data.name}`)
@@ -158,6 +173,7 @@ async function executeSlash(interaction, client, commands, slashCommands) {
       .addFields(
         { name: 'Cooldown', value: `${command.cooldown || 0} second(s)`, inline: true },
         { name: 'Permissions', value: command.permissions ? command.permissions.join(', ') : 'None', inline: true },
+        { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
         { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
       )
       .setTimestamp();
@@ -179,28 +195,33 @@ async function executeSlash(interaction, client, commands, slashCommands) {
     let currentPage = 0;
 
     for (const folder of commandFolders) {
-      const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter((file) => file.endsWith('.js'));
-      const commandList = commandFiles.map((file) => {
-        const commandName = file.slice(0, -3);
-        const command = slashCommands.get(commandName);
-        const isPremium = command.premium;
-        return `\`${commandName}${isPremium ? '*' : '^'}\``;
-      }).join(', ');
-
       if (folder === 'developer' && !developerIDs.includes(interaction.user.id)) {
         continue;
       }
 
-      if (embed.data && embed.data.fields && (embed.data.fields.length === 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + 1 === 25))) {
-        pages.push(embed);
-        embed = new EmbedBuilder()
-          .setColor('#0099ff')
-          .setTitle('Command List')
-          .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n* - Premium command\n^ - Free command`)
-          .setTimestamp();
-      }
+      const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter((file) => file.endsWith('.js'));
+      const commandList = commandFiles.map((file) => {
+        const commandName = file.slice(0, -3);
+        const command = slashCommands.get(commandName);
+        if (!command) return null;
+        const isPremium = command.premium;
+        const hasPermission = command.permissionLevel ? command.permissionLevel.includes(userPermissionLevel) : true;
+        command.category = folder; // Legg til kategori basert på mappenavn
+        return hasPermission ? `\`${commandName}${isPremium ? '*' : '^'}\`` : null;
+      }).filter(Boolean).join(', ');
 
-      embed.addFields({ name: folder.toUpperCase(), value: commandList || 'No commands in this category.' });
+      if (commandList) {
+        if (embed.data && embed.data.fields && (embed.data.fields.length === 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + 1 === 25))) {
+          pages.push(embed);
+          embed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle('Command List')
+            .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n* - Premium command\n^ - Free command`)
+            .setTimestamp();
+        }
+
+        embed.addFields({ name: folder.toUpperCase(), value: commandList });
+      }
     }
 
     embed.addFields({ name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' });

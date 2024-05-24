@@ -65,15 +65,70 @@ class CommandHandler {
     console.log(`Found command: ${command.name}`);
 
     const isPremiumUser = await hasPremiumSubscription(message.author.id);
+
     if (command.premium && !isPremiumUser) {
       return message.reply('This command is only available for premium users.');
     }
 
-    const userPermissionLevel = await getRolePermissionLevel(message.guild.id, message.member.roles.highest.id);
-    if (command.permissionLevel && userPermissionLevel < command.permissionLevel) {
-      return message.reply('You do not have permission to use this command.');
+    const isServerOwner = message.guild.ownerId === message.author.id;
+
+    if (isServerOwner) {
+      // Servereieren har alltid tillatelse til å bruke kommandoer
+      this.executeCommand(message, args, command);
+    } else {
+      try {
+        const userPermissionLevel = await getRolePermissionLevel(message.guild.id, message.member.roles.highest.id);
+        if (command.permissionLevel && command.permissionLevel.includes(userPermissionLevel)) {
+          this.executeCommand(message, args, command);
+        } else {
+          return message.reply('You do not have permission to use this command.');
+        }
+      } catch (error) {
+        console.error('Error getting user permission level:', error);
+        return message.reply('An error occurred while checking your permissions.');
+      }
+    }
+  }
+
+  async handleSlashCommand(interaction) {
+    if (!interaction.isCommand()) return;
+
+    const command = this.slashCommands.get(interaction.commandName);
+
+    if (!command) {
+      console.log(`No slash command found for: ${interaction.commandName}`);
+      return;
     }
 
+    console.log(`Found slash command: ${command.data.name}`);
+
+    const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
+
+    if (command.premium && !isPremiumUser) {
+      return interaction.reply({ content: 'This command is only available for premium users.', ephemeral: true });
+    }
+
+    const isServerOwner = interaction.guild.ownerId === interaction.user.id;
+
+    if (isServerOwner) {
+      // Servereieren har alltid tillatelse til å bruke kommandoer
+      this.executeSlashCommand(interaction, command);
+    } else {
+      try {
+        const userPermissionLevel = await getRolePermissionLevel(interaction.guild.id, interaction.member.roles.highest.id);
+        if (command.permissionLevel && command.permissionLevel.includes(userPermissionLevel)) {
+          this.executeSlashCommand(interaction, command);
+        } else {
+          return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+        }
+      } catch (error) {
+        console.error('Error getting user permission level:', error);
+        return interaction.reply({ content: 'An error occurred while checking your permissions.', ephemeral: true });
+      }
+    }
+  }
+
+  executeCommand(message, args, command) {
     if (!this.cooldowns.has(command.name)) {
       this.cooldowns.set(command.name, new Collection());
     }
@@ -102,28 +157,7 @@ class CommandHandler {
     }
   }
 
-  async handleSlashCommand(interaction) {
-    if (!interaction.isCommand()) return;
-
-    const command = this.slashCommands.get(interaction.commandName);
-
-    if (!command) {
-      console.log(`No slash command found for: ${interaction.commandName}`);
-      return;
-    }
-
-    console.log(`Found slash command: ${command.data.name}`);
-
-    const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
-    if (command.premium && !isPremiumUser) {
-      return interaction.reply({ content: 'This command is only available for premium users.', ephemeral: true });
-    }
-
-    const userPermissionLevel = await getRolePermissionLevel(interaction.guild.id, interaction.member.roles.highest.id);
-    if (command.permissionLevel && userPermissionLevel < command.permissionLevel) {
-      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-    }
-
+  async executeSlashCommand(interaction, command) {
     if (!this.cooldowns.has(command.data.name)) {
       this.cooldowns.set(command.data.name, new Collection());
     }

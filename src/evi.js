@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
 const { token } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
-const { setupDatabase, pool, hasPremiumSubscription } = require('./database/database');
+const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole } = require('./database/database');
 
 const client = new Client({
   intents: [
@@ -68,6 +68,17 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     // User lost premium subscription
     console.log(`User ${newMember.user.tag} (${newMember.id}) lost premium subscription`);
     // Perform any necessary actions for premium subscription deactivation
+  }
+});
+
+client.on('guildCreate', async (guild) => {
+  const ownerId = guild.ownerId;
+  const ownerMember = await guild.members.fetch(ownerId);
+
+  if (ownerMember) {
+    addOwnerRole(guild.id, ownerId, () => {
+      console.log(`Added owner role for user ${ownerMember.user.tag} (${ownerId}) in guild ${guild.name} (${guild.id})`);
+    });
   }
 });
 
