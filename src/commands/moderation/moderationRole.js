@@ -1,5 +1,5 @@
 // src/commands/moderation/moderationRole.js
-const { setModeratorRole, getModeratorRole, removeModeratorRole } = require('../../database/database');
+const { setModeratorRole, getModeratorRoles, removeModeratorRole } = require('../../database/database');
 const { hasPremiumSubscription } = require('../../database/database');
 
 module.exports = {
@@ -37,9 +37,9 @@ module.exports = {
         return message.reply('Invalid role. Please provide a valid role mention, ID, or name.');
       }
 
-      const currentModeratorRoles = await getModeratorRole(message.guild.id);
+      const currentModeratorRoles = await getModeratorRoles(message.guild.id);
 
-      if (currentModeratorRoles && currentModeratorRoles.length >= maxRoles) {
+      if (currentModeratorRoles.length >= maxRoles) {
         return message.reply(`You can only add up to ${maxRoles} moderator role(s). Please remove a role before adding a new one.`);
       }
 
@@ -69,9 +69,9 @@ module.exports = {
       await removeModeratorRole(message.guild.id, roleId);
       message.reply(`Removed <@&${roleId}> from moderator roles.`);
     } else if (subcommand === 'list') {
-      const moderatorRoles = await getModeratorRole(message.guild.id);
+      const moderatorRoles = await getModeratorRoles(message.guild.id);
 
-      if (!moderatorRoles || moderatorRoles.length === 0) {
+      if (moderatorRoles.length === 0) {
         message.reply('There are no moderator roles set.');
       } else {
         const roleList = moderatorRoles.map(roleId => `<@&${roleId}>`).join(', ');
@@ -126,9 +126,9 @@ module.exports = {
     const maxRoles = isPremium ? 5 : 1;
 
     if (subcommand === 'add') {
-      const currentModeratorRoles = await getModeratorRole(interaction.guild.id);
+      const currentModeratorRoles = await getModeratorRoles(interaction.guild.id);
 
-      if (currentModeratorRoles && currentModeratorRoles.length >= maxRoles) {
+      if (currentModeratorRoles.length >= maxRoles) {
         return interaction.reply({ content: `You can only add up to ${maxRoles} moderator role(s). Please remove a role before adding a new one.`, ephemeral: true });
       }
 
@@ -138,9 +138,9 @@ module.exports = {
       await removeModeratorRole(interaction.guild.id, roleInput.id);
       interaction.reply(`Removed <@&${roleInput.id}> from moderator roles.`);
     } else if (subcommand === 'list') {
-      const moderatorRoles = await getModeratorRole(interaction.guild.id);
+      const moderatorRoles = await getModeratorRoles(interaction.guild.id);
 
-      if (!moderatorRoles || moderatorRoles.length === 0) {
+      if (moderatorRoles.length === 0) {
         interaction.reply('There are no moderator roles set.');
       } else {
         const roleList = moderatorRoles.map(roleId => `<@&${roleId}>`).join(', ');

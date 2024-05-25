@@ -142,14 +142,14 @@ const setAdminRole = (guildId, roleId) => {
   });
 };
 
-const getAdminRole = (guildId) => {
+const getAdminRoles = (guildId) => {
   return new Promise((resolve, reject) => {
     pool.query(
       'SELECT roleId FROM role_permissions WHERE guildId = ? AND permissionLevel = ?',
       [guildId, 'admin'],
       (err, results) => {
         if (err) {
-          console.error('Error getting admin role:', err);
+          console.error('Error getting admin roles:', err);
           reject(err);
         } else {
           const adminRoles = results.map((row) => row.roleId);
@@ -179,43 +179,53 @@ const removeAdminRole = (guildId, roleId) => {
 
 const setModeratorRole = (guildId, roleId) => {
   return new Promise((resolve, reject) => {
-    const query = 'INSERT INTO role_permissions (guildId, roleId, permissionLevel) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE permissionLevel = VALUES(permissionLevel)';
-    pool.query(query, [guildId, roleId, 'moderator'], (err) => {
-      if (err) {
-        console.error('Error setting moderator role:', err);
-        reject();
-      } else {
-        resolve();
+    pool.query(
+      'INSERT INTO role_permissions (guildId, roleId, permissionLevel) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE permissionLevel = VALUES(permissionLevel)',
+      [guildId, roleId, 'moderator'],
+      (err) => {
+        if (err) {
+          console.error('Error setting moderator role:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
       }
-    });
+    );
   });
 };
 
-const getModeratorRole = (guildId) => {
+const getModeratorRoles = (guildId) => {
   return new Promise((resolve, reject) => {
-    const query = 'SELECT roleId FROM role_permissions WHERE guildId = ? AND permissionLevel = ?';
-    pool.query(query, [guildId, 'moderator'], (err, results) => {
-      if (err) {
-        console.error('Error getting moderator role:', err);
-        resolve(null);
-      } else {
-        resolve(results.length > 0 ? results[0].roleId : null);
+    pool.query(
+      'SELECT roleId FROM role_permissions WHERE guildId = ? AND permissionLevel = ?',
+      [guildId, 'moderator'],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting moderator roles:', err);
+          reject(err);
+        } else {
+          const moderatorRoles = results.map((row) => row.roleId);
+          resolve(moderatorRoles);
+        }
       }
-    });
+    );
   });
 };
 
-const removeModeratorRole = (guildId) => {
+const removeModeratorRole = (guildId, roleId) => {
   return new Promise((resolve, reject) => {
-    const query = 'DELETE FROM role_permissions WHERE guildId = ? AND permissionLevel = ?';
-    pool.query(query, [guildId, 'moderator'], (err) => {
-      if (err) {
-        console.error('Error removing moderator role:', err);
-        reject();
-      } else {
-        resolve();
+    pool.query(
+      'DELETE FROM role_permissions WHERE guildId = ? AND roleId = ? AND permissionLevel = ?',
+      [guildId, roleId, 'moderator'],
+      (err) => {
+        if (err) {
+          console.error('Error removing moderator role:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
       }
-    });
+    );
   });
 };
 
@@ -704,10 +714,10 @@ module.exports = {
   hasPremiumSubscription,
   getRolePermissionLevel,
   setAdminRole,
-  getAdminRole,
+  getAdminRoles,
   removeAdminRole,
   setModeratorRole,
-  getModeratorRole,
+  getModeratorRoles,
   removeModeratorRole,
   addOwnerRole,
   addPremiumSubscription,

@@ -1,5 +1,5 @@
 // src/commands/moderation/adminRole.js
-const { setAdminRole, getAdminRole, removeAdminRole } = require('../../database/database');
+const { setAdminRole, getAdminRoles, removeAdminRole } = require('../../database/database');
 const { hasPremiumSubscription } = require('../../database/database');
 
 module.exports = {
@@ -37,9 +37,9 @@ module.exports = {
         return message.reply('Invalid role. Please provide a valid role mention, ID, or name.');
       }
 
-      const currentAdminRoles = await getAdminRole(message.guild.id);
+      const currentAdminRoles = await getAdminRoles(message.guild.id);
 
-      if (currentAdminRoles && currentAdminRoles.length >= maxRoles) {
+      if (currentAdminRoles.length >= maxRoles) {
         return message.reply(`You can only add up to ${maxRoles} admin role(s). Please remove a role before adding a new one.`);
       }
 
@@ -69,9 +69,9 @@ module.exports = {
       await removeAdminRole(message.guild.id, roleId);
       message.reply(`Removed <@&${roleId}> from admin roles.`);
     } else if (subcommand === 'list') {
-      const adminRoles = await getAdminRole(message.guild.id);
+      const adminRoles = await getAdminRoles(message.guild.id);
 
-      if (!adminRoles || adminRoles.length === 0) {
+      if (adminRoles.length === 0) {
         message.reply('There are no admin roles set.');
       } else {
         const roleList = adminRoles.map(roleId => `<@&${roleId}>`).join(', ');
@@ -126,9 +126,9 @@ module.exports = {
     const maxRoles = isPremium ? 5 : 1;
 
     if (subcommand === 'add') {
-      const currentAdminRoles = await getAdminRole(interaction.guild.id);
+      const currentAdminRoles = await getAdminRoles(interaction.guild.id);
 
-      if (currentAdminRoles && currentAdminRoles.length >= maxRoles) {
+      if (currentAdminRoles.length >= maxRoles) {
         return interaction.reply({ content: `You can only add up to ${maxRoles} admin role(s). Please remove a role before adding a new one.`, ephemeral: true });
       }
 
@@ -138,9 +138,9 @@ module.exports = {
       await removeAdminRole(interaction.guild.id, roleInput.id);
       interaction.reply(`Removed <@&${roleInput.id}> from admin roles.`);
     } else if (subcommand === 'list') {
-      const adminRoles = await getAdminRole(interaction.guild.id);
+      const adminRoles = await getAdminRoles(interaction.guild.id);
 
-      if (!adminRoles || adminRoles.length === 0) {
+      if (adminRoles.length === 0) {
         interaction.reply('There are no admin roles set.');
       } else {
         const roleList = adminRoles.map(roleId => `<@&${roleId}>`).join(', ');
