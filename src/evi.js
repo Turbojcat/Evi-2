@@ -1,9 +1,11 @@
 // src/evi.js
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord.js');
 const { token } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
-const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, getWelcomeChannel, getWelcomeMessage } = require('./database/database');
+const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, getWelcomeChannel, getWelcomeMessage, createUserProfilesTable } = require('./database/database');
 
 const client = new Client({
   intents: [
@@ -41,9 +43,34 @@ client.once('ready', () => {
   const commandsPath = path.join(__dirname, 'commands');
   commandHandler.loadCommands(commandsPath);
   setupDatabase();
+  createUserProfilesTable();
 
   const { commandCount, aliasCount } = commandHandler.getCommandStats();
   console.log(`${client.user.tag} (${client.user.id}) is ready with ${commandCount} commands and ${aliasCount} aliases, serving ${client.guilds.cache.size} servers and ${client.users.cache.size} users!`);
+
+  const rest = new REST({ version: '10' }).setToken(token);
+
+  (async () => {
+    try {
+      console.log('Started refreshing application (/) commands.');
+
+      for (const command of commandHandler.slashCommands.values()) {
+        try {
+          await rest.post(Routes.applicationCommands(client.user.id), {
+            body: command.data,
+          });
+          console.log(`Successfully registered slash command: ${command.data.name}`);
+        } catch (error) {
+          console.error(`Error registering slash command: ${command.data.name}`);
+          console.error(error);
+        }
+      }
+
+      console.log('Finished refreshing application (/) commands.');
+    } catch (error) {
+      console.error(error);
+    }
+  })();
 });
 
 client.on('messageCreate', (message) => {
@@ -61,13 +88,13 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
   const newPremiumStatus = await hasPremiumSubscription(newMember.id);
 
   if (!oldPremiumStatus && newPremiumStatus) {
-    // User gained premium subscription
     console.log(`User ${newMember.user.tag} (${newMember.id}) gained premium subscription`);
-    // Perform any necessary actions for premium subscription activation
+    // Perform actions for premium subscription activation
+    // ...
   } else if (oldPremiumStatus && !newPremiumStatus) {
-    // User lost premium subscription
     console.log(`User ${newMember.user.tag} (${newMember.id}) lost premium subscription`);
-    // Perform any necessary actions for premium subscription deactivation
+    // Perform actions for premium subscription deactivation
+    // ...
   }
 });
 
@@ -97,4 +124,4 @@ client.on('guildMemberAdd', async (member) => {
   }
 });
 
-client.login(token);
+client.login(token)

@@ -5,7 +5,7 @@ const { isSuggestionBlacklisted } = require('../../database/database');
 
 module.exports = {
   name: 'suggestion',
-  description: 'Submit a suggestion',
+  description: 'Submit a suggestion for function to Evi!s',
   usage: '<suggestion>',
   aliases: ['suggest'],
   permissions: [],

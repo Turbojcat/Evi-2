@@ -71,6 +71,7 @@ const setupDatabase = () => {
       console.log('Guild settings table created or already exists');
     }
   );
+
   pool.query(
     `CREATE TABLE IF NOT EXISTS economy (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -87,6 +88,7 @@ const setupDatabase = () => {
       console.log('Economy table created or already exists');
     }
   );
+
   pool.query(
     `CREATE TABLE IF NOT EXISTS custom_commands (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -103,21 +105,11 @@ const setupDatabase = () => {
       console.log('Custom commands table created or already exists');
     }
   );
+
+  createUserProfilesTable();
 };
 
-const hasPremiumSubscription = (userId) => {
-  return new Promise((resolve, reject) => {
-    const query = 'SELECT * FROM premium_subscriptions WHERE userId = ? AND endDate > CURRENT_TIMESTAMP';
-    pool.query(query, [userId], (err, results) => {
-      if (err) {
-        console.error('Error checking premium subscription:', err);
-        reject(false);
-      } else {
-        resolve(results.length > 0);
-      }
-    });
-  });
-};
+
 
 const getRolePermissionLevel = (guildId, roleId) => {
   return new Promise((resolve, reject) => {
@@ -135,43 +127,53 @@ const getRolePermissionLevel = (guildId, roleId) => {
 
 const setAdminRole = (guildId, roleId) => {
   return new Promise((resolve, reject) => {
-    const query = 'INSERT INTO role_permissions (guildId, roleId, permissionLevel) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE permissionLevel = VALUES(permissionLevel)';
-    pool.query(query, [guildId, roleId, 'admin'], (err) => {
-      if (err) {
-        console.error('Error setting admin role:', err);
-        reject();
-      } else {
-        resolve();
+    pool.query(
+      'INSERT INTO role_permissions (guildId, roleId, permissionLevel) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE permissionLevel = VALUES(permissionLevel)',
+      [guildId, roleId, 'admin'],
+      (err) => {
+        if (err) {
+          console.error('Error setting admin role:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
       }
-    });
+    );
   });
 };
 
 const getAdminRole = (guildId) => {
   return new Promise((resolve, reject) => {
-    const query = 'SELECT roleId FROM role_permissions WHERE guildId = ? AND permissionLevel = ?';
-    pool.query(query, [guildId, 'admin'], (err, results) => {
-      if (err) {
-        console.error('Error getting admin role:', err);
-        resolve(null);
-      } else {
-        resolve(results.length > 0 ? results[0].roleId : null);
+    pool.query(
+      'SELECT roleId FROM role_permissions WHERE guildId = ? AND permissionLevel = ?',
+      [guildId, 'admin'],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting admin role:', err);
+          reject(err);
+        } else {
+          const adminRoles = results.map((row) => row.roleId);
+          resolve(adminRoles);
+        }
       }
-    });
+    );
   });
 };
 
-const removeAdminRole = (guildId) => {
+const removeAdminRole = (guildId, roleId) => {
   return new Promise((resolve, reject) => {
-    const query = 'DELETE FROM role_permissions WHERE guildId = ? AND permissionLevel = ?';
-    pool.query(query, [guildId, 'admin'], (err) => {
-      if (err) {
-        console.error('Error removing admin role:', err);
-        reject();
-      } else {
-        resolve();
+    pool.query(
+      'DELETE FROM role_permissions WHERE guildId = ? AND roleId = ? AND permissionLevel = ?',
+      [guildId, roleId, 'admin'],
+      (err) => {
+        if (err) {
+          console.error('Error removing admin role:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
       }
-    });
+    );
   });
 };
 
@@ -231,13 +233,28 @@ const addOwnerRole = (guildId, ownerId) => {
   });
 };
 
+
+const hasPremiumSubscription = (userId) => {
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT * FROM premium_subscriptions WHERE userId = ? AND endDate > CURRENT_TIMESTAMP';
+    pool.query(query, [userId], (err, results) => {
+      if (err) {
+        console.error('Error checking premium subscription:', err);
+        reject(err);
+      } else {
+        resolve(results.length > 0);
+      }
+    });
+  });
+};
+
 const addPremiumSubscription = (userId, endDate) => {
   return new Promise((resolve, reject) => {
     const query = 'INSERT INTO premium_subscriptions (userId, endDate) VALUES (?, ?)';
     pool.query(query, [userId, endDate], (err) => {
       if (err) {
         console.error('Error adding premium subscription:', err);
-        reject();
+        reject(err);
       } else {
         resolve();
       }
@@ -251,13 +268,13 @@ const removePremiumSubscription = (userId) => {
     pool.query(query, [userId], (err) => {
       if (err) {
         console.error('Error removing premium subscription:', err);
-        reject();
+        reject(err);
       } else {
         resolve();
       }
     });
   });
-};
+}
 
 const setStoryChannel = (guildId, channelId) => {
   return new Promise((resolve, reject) => {
@@ -656,6 +673,31 @@ const removeWelcomeMessage = (guildId) => {
   });
 };
 
+const createUserProfilesTable = () => {
+  const sql = `
+    CREATE TABLE IF NOT EXISTS user_profiles (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      guild_id VARCHAR(255) NOT NULL,
+      about_me TEXT,
+      links JSON,
+      birthday VARCHAR(255),
+      location VARCHAR(255),
+      interests JSON,
+      story TEXT,
+      UNIQUE KEY unique_user_profile (user_id, guild_id)
+    )
+  `;
+
+  pool.query(sql, (error) => {
+    if (error) {
+      console.error('Error creating user_profiles table:', error);
+    } else {
+      console.log('user_profiles table created successfully');
+    }
+  });
+};
+
 module.exports = {
   pool,
   setupDatabase,
@@ -693,4 +735,5 @@ module.exports = {
   setWelcomeMessage,
   getWelcomeMessage,
   removeWelcomeMessage,
+  createUserProfilesTable,
 };

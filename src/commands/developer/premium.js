@@ -46,34 +46,38 @@ module.exports = {
     }
 
     let userId;
+    let user;
 
     if (userInput.startsWith('<@') && userInput.endsWith('>')) {
       userId = userInput.slice(2, -1);
       if (userId.startsWith('!')) {
         userId = userId.slice(1);
       }
+      user = await message.client.users.fetch(userId).catch(() => null);
     } else if (!isNaN(userInput)) {
       userId = userInput;
+      user = await message.client.users.fetch(userId).catch(() => null);
     } else {
-      const user = message.client.users.cache.find((user) => user.username === userInput || user.tag === userInput);
-      if (user) {
-        userId = user.id;
-      }
+      user = message.client.users.cache.find((user) => user.username === userInput || user.tag === userInput);
     }
 
-    if (!userId) {
-      return message.reply('Invalid user. Please provide a valid username, user ID, or user tag.');
+    if (!user) {
+      return message.reply('Invalid user. Please provide a valid user mention, ID, username, or tag.');
     }
 
-    const guild = message.client.guilds.cache.first();
-    const member = await guild.members.fetch(userId).catch(() => null);
+    const member = await message.guild.members.fetch(user.id).catch(() => null);
 
     if (!member) {
-      return message.reply('User not found in the server.');
+      return message.reply('The specified user is not a member of this server.');
     }
 
     if (subcommand === 'add') {
-      const duration = durationString ? parseDuration(durationString) : { years: 1 };
+      let duration = { days: 30 }; // Default duration of 30 days
+
+      if (durationString) {
+        duration = parseDuration(durationString);
+      }
+
       const endDate = new Date();
 
       if (duration.minutes) {
@@ -146,34 +150,38 @@ module.exports = {
     const durationString = interaction.options.getString('duration');
 
     let userId;
+    let user;
 
     if (userInput.startsWith('<@') && userInput.endsWith('>')) {
       userId = userInput.slice(2, -1);
       if (userId.startsWith('!')) {
         userId = userId.slice(1);
       }
+      user = await interaction.client.users.fetch(userId).catch(() => null);
     } else if (!isNaN(userInput)) {
       userId = userInput;
+      user = await interaction.client.users.fetch(userId).catch(() => null);
     } else {
-      const user = interaction.client.users.cache.find((user) => user.username === userInput || user.tag === userInput);
-      if (user) {
-        userId = user.id;
-      }
+      user = interaction.client.users.cache.find((user) => user.username === userInput || user.tag === userInput);
     }
 
-    if (!userId) {
-      return interaction.reply({ content: 'Invalid user. Please provide a valid username, user ID, or user tag.', ephemeral: true });
+    if (!user) {
+      return interaction.reply({ content: 'Invalid user. Please provide a valid user mention, ID, username, or tag.', ephemeral: true });
     }
 
-    const guild = interaction.client.guilds.cache.first();
-    const member = await guild.members.fetch(userId).catch(() => null);
+    const member = await interaction.guild.members.fetch(user.id).catch(() => null);
 
     if (!member) {
-      return interaction.reply({ content: 'User not found in the server.', ephemeral: true });
+      return interaction.reply({ content: 'The specified user is not a member of this server.', ephemeral: true });
     }
 
     if (subcommand === 'add') {
-      const duration = durationString ? parseDuration(durationString) : { years: 1 };
+      let duration = { days: 30 }; // Default duration of 30 days
+
+      if (durationString) {
+        duration = parseDuration(durationString);
+      }
+
       const endDate = new Date();
 
       if (duration.minutes) {

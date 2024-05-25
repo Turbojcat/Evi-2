@@ -25,16 +25,23 @@ module.exports = {
     description: 'Sets a user\'s balance',
     options: [
       {
-        name: 'user',
-        type: 6, // USER
-        description: 'The user to set the balance for',
-        required: true,
-      },
-      {
-        name: 'amount',
-        type: 10, // NUMBER
-        description: 'The amount to set the balance to',
-        required: true,
+        name: 'set',
+        type: 1, // SUB_COMMAND
+        description: 'Sets a user\'s balance',
+        options: [
+          {
+            name: 'user',
+            type: 6, // USER
+            description: 'The user to set the balance for',
+            required: true,
+          },
+          {
+            name: 'amount',
+            type: 10, // NUMBER
+            description: 'The amount to set the balance to',
+            required: true,
+          },
+        ],
       },
     ],
   },

@@ -2,7 +2,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { prefix } = require('../../config');
+const { prefix, developerIDs } = require('../../config');
 const { hasPremiumSubscription, getRolePermissionLevel } = require('../../database/database');
 
 module.exports = {
@@ -37,7 +37,6 @@ module.exports = {
 async function executePrefix(message, args, client, commands, slashCommands) {
   console.log('executePrefix function called');
   const commandName = args[0];
-  const developerIDs = process.env.DEVELOPER_IDS.split(',');
   const isPremiumUser = await hasPremiumSubscription(message.author.id);
   const userPermissionLevel = await getRolePermissionLevel(message.guild.id, message.member.roles.highest.id);
 
@@ -52,10 +51,8 @@ async function executePrefix(message, args, client, commands, slashCommands) {
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle(`Command: ${command.name}`)
-      .setDescription(command.description)
+      .setDescription(`${command.description}\n\nAliases: ${command.aliases ? command.aliases.join(', ') : 'None'}\n\nUsage: \`${prefix}${command.name} ${command.usage || ''}\``)
       .addFields(
-        { name: 'Usage', value: `\`${prefix}${command.name} ${command.usage || ''}\``, inline: true },
-        { name: 'Aliases', value: command.aliases ? command.aliases.join(', ') : 'None', inline: true },
         { name: 'Cooldown', value: `${command.cooldown || 0} second(s)`, inline: true },
         { name: 'Premium', value: command.premium ? 'Yes' : 'No', inline: true },
         { name: 'Permission Level', value: command.permissionLevel ? command.permissionLevel.join(', ') : 'normal', inline: true },
@@ -72,7 +69,7 @@ async function executePrefix(message, args, client, commands, slashCommands) {
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle('Command List')
-      .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n* - Premium command\n^ - Free command`)
+      .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n**^** - Free command\n**^^** - Premium command`)
       .setTimestamp();
 
     const commandsPath = path.join(__dirname, '..');
@@ -96,7 +93,7 @@ async function executePrefix(message, args, client, commands, slashCommands) {
         const hasPermission = command.permissionLevel ? command.permissionLevel.includes(userPermissionLevel) : true;
         command.category = folder; // Legg til kategori basert på mappenavn
         if (hasPermission) {
-          commandFields.push({ name: `\`${commandName}${isPremium ? " *" : " ^"}\``, value: command.description });
+          commandFields.push({ name: `\`${commandName}\`${isPremium ? " ^^" : " ^"}`, value: command.description });
         }
       }
 
@@ -106,10 +103,11 @@ async function executePrefix(message, args, client, commands, slashCommands) {
           embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('Command List')
-            .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n* - Premium command\n^ - Free command`)
+            .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n**^** - Free command\n**^^** - Premium command`)
             .setTimestamp();
         }
 
+        embed.addFields({ name: `${folder.toUpperCase()} Commands`, value: '\u200B' });
         console.log('Command Fields:', commandFields);
         embed.addFields(...commandFields);
       }
@@ -160,7 +158,6 @@ async function executeSlash(interaction, client, commands, slashCommands) {
   console.log('executeSlash function called');
   const { options } = interaction;
   const commandName = options.getString('command');
-  const developerIDs = process.env.DEVELOPER_IDS.split(',');
   const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
   const userPermissionLevel = await getRolePermissionLevel(interaction.guild.id, interaction.member.roles.highest.id);
 
@@ -193,7 +190,7 @@ async function executeSlash(interaction, client, commands, slashCommands) {
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle('Command List')
-      .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n* - Premium command\n^ - Free command`)
+      .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n**^** - Free command\n**^^** - Premium command`)
       .setTimestamp();
 
     const commandsPath = path.join(__dirname, '..');
@@ -217,7 +214,7 @@ async function executeSlash(interaction, client, commands, slashCommands) {
         const hasPermission = command.permissionLevel ? command.permissionLevel.includes(userPermissionLevel) : true;
         command.category = folder; // Legg til kategori basert på mappenavn
         if (hasPermission) {
-          commandFields.push({ name: `\`${commandName}${isPremium ? " *" : " ^"}\``, value: command.data.description });
+          commandFields.push({ name: `\`${commandName}\`${isPremium ? " ^^" : " ^"}`, value: command.data.description });
         }
       }
 
@@ -227,10 +224,11 @@ async function executeSlash(interaction, client, commands, slashCommands) {
           embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('Command List')
-            .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n* - Premium command\n^ - Free command`)
+            .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}\n\n**^** - Free command\n**^^** - Premium command`)
             .setTimestamp();
         }
 
+        embed.addFields({ name: `${folder.toUpperCase()} Commands`, value: '\u200B' });
         console.log('Command Fields:', commandFields);
         embed.addFields(...commandFields);
       }
