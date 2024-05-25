@@ -71,6 +71,38 @@ const setupDatabase = () => {
       console.log('Guild settings table created or already exists');
     }
   );
+  pool.query(
+    `CREATE TABLE IF NOT EXISTS economy (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      guildId VARCHAR(255) NOT NULL,
+      userId VARCHAR(255) NOT NULL,
+      balance DECIMAL(10, 2) NOT NULL DEFAULT 0,
+      UNIQUE KEY unique_user_balance (guildId, userId)
+    )`,
+    (err, results) => {
+      if (err) {
+        console.error('Error during economy table creation:', err);
+        return;
+      }
+      console.log('Economy table created or already exists');
+    }
+  );
+  pool.query(
+    `CREATE TABLE IF NOT EXISTS custom_commands (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      guild_id VARCHAR(255) NOT NULL,
+      command VARCHAR(255) NOT NULL,
+      response TEXT NOT NULL,
+      UNIQUE KEY unique_custom_command (guild_id, command)
+    )`,
+    (err, results) => {
+      if (err) {
+        console.error('Error during custom_commands table creation:', err);
+        return;
+      }
+      console.log('Custom commands table created or already exists');
+    }
+  );
 };
 
 const hasPremiumSubscription = (userId) => {
@@ -227,47 +259,401 @@ const removePremiumSubscription = (userId) => {
   });
 };
 
-const setStoryChannel = (guildId, channelId, callback) => {
-  pool.query(
-    'INSERT INTO guild_settings (guild_id, setting_name, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
-    [guildId, 'story_channel', channelId],
-    (err) => {
-      if (err) {
-        console.error('Error setting story channel:', err);
-        return callback(null);
+const setStoryChannel = (guildId, channelId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'INSERT INTO guild_settings (guild_id, setting_name, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+      [guildId, 'story_channel', channelId],
+      (err) => {
+        if (err) {
+          console.error('Error setting story channel:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
       }
-      callback();
-    }
-  );
+    );
+  });
 };
 
-const getStoryChannel = (guildId, callback) => {
-  pool.query(
-    'SELECT setting_value FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
-    [guildId, 'story_channel'],
-    (err, results) => {
-      if (err) {
-        console.error('Error getting story channel:', err);
-        return callback(null);
+const getStoryChannel = (guildId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT setting_value FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
+      [guildId, 'story_channel'],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting story channel:', err);
+          reject(err);
+        } else {
+          const storyChannel = results.length > 0 ? results[0].setting_value : null;
+          resolve(storyChannel);
+        }
       }
-      const storyChannel = results.length > 0 ? results[0].setting_value : null;
-      callback(storyChannel);
-    }
-  );
+    );
+  });
 };
 
-const removeStoryChannel = (guildId, callback) => {
-  pool.query(
-    'DELETE FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
-    [guildId, 'story_channel'],
-    (err) => {
-      if (err) {
-        console.error('Error removing story channel:', err);
-        return callback();
+const removeStoryChannel = (guildId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'DELETE FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
+      [guildId, 'story_channel'],
+      (err) => {
+        if (err) {
+          console.error('Error removing story channel:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
       }
-      callback();
-    }
-  );
+    );
+  });
+};
+
+const getStoryChannels = () => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT guild_id, setting_value FROM guild_settings WHERE setting_name = ?',
+      ['story_channel'],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting story channels:', err);
+          reject(err);
+        } else {
+          resolve(results);
+        }
+      }
+    );
+  });
+};
+
+const getBalance = (guildId, userId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT balance FROM economy WHERE guildId = ? AND userId = ?',
+      [guildId, userId],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting balance:', err);
+          reject(err);
+        } else {
+          const balance = results.length > 0 ? results[0].balance : 0;
+          resolve(balance);
+        }
+      }
+    );
+  });
+};
+
+const setBalance = (guildId, userId, balance) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'INSERT INTO economy (guildId, userId, balance) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance)',
+      [guildId, userId, balance],
+      (err) => {
+        if (err) {
+          console.error('Error setting balance:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const addBalance = (guildId, userId, amount) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'INSERT INTO economy (guildId, userId, balance) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = balance + VALUES(balance)',
+      [guildId, userId, amount],
+      (err) => {
+        if (err) {
+          console.error('Error adding balance:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const removeBalance = (guildId, userId, amount) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'UPDATE economy SET balance = GREATEST(0, balance - ?) WHERE guildId = ? AND userId = ?',
+      [amount, guildId, userId],
+      (err) => {
+        if (err) {
+          console.error('Error removing balance:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const addCustomCommand = (guildId, command, response) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'INSERT INTO custom_commands (guild_id, command, response) VALUES (?, ?, ?)',
+      [guildId, command, response],
+      (err) => {
+        if (err) {
+          console.error('Error adding custom command:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const removeCustomCommand = (guildId, command) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'DELETE FROM custom_commands WHERE guild_id = ? AND command = ?',
+      [guildId, command],
+      (err) => {
+        if (err) {
+          console.error('Error removing custom command:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const executeCustomCommand = (guildId, command) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT response FROM custom_commands WHERE guild_id = ? AND command = ?',
+      [guildId, command],
+      (err, results) => {
+        if (err) {
+          console.error('Error executing custom command:', err);
+          reject(err);
+        } else {
+          const response = results.length > 0 ? results[0].response : null;
+          resolve(response);
+        }
+      }
+    );
+  });
+};
+
+const getCustomCommands = (guildId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT command, response FROM custom_commands WHERE guild_id = ?',
+      [guildId],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting custom commands:', err);
+          reject(err);
+        } else {
+          resolve(results);
+        }
+      }
+    );
+  });
+};
+
+const getCustomCommandLimit = (guildId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT setting_value FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
+      [guildId, 'custom_command_limit'],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting custom command limit:', err);
+          reject(err);
+        } else {
+          const limit = results.length > 0 ? parseInt(results[0].setting_value) : 10;
+          resolve(limit);
+        }
+      }
+    );
+  });
+};
+
+const setCustomCommandLimit = (guildId, limit) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'INSERT INTO guild_settings (guild_id, setting_name, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+      [guildId, 'custom_command_limit', limit],
+      (err) => {
+        if (err) {
+          console.error('Error setting custom command limit:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const isSuggestionBlacklisted = (userId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT * FROM suggestion_blacklist WHERE user_id = ?',
+      [userId],
+      (err, results) => {
+        if (err) {
+          console.error('Error checking suggestion blacklist:', err);
+          reject(err);
+        } else {
+          resolve(results.length > 0);
+        }
+      }
+    );
+  });
+};
+
+const addSuggestionBlacklist = (userId, reason) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'INSERT INTO suggestion_blacklist (user_id, reason) VALUES (?, ?)',
+      [userId, reason],
+      (err) => {
+        if (err) {
+          console.error('Error adding user to suggestion blacklist:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const removeSuggestionBlacklist = (userId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'DELETE FROM suggestion_blacklist WHERE user_id = ?',
+      [userId],
+      (err) => {
+        if (err) {
+          console.error('Error removing user from suggestion blacklist:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const setWelcomeChannel = (guildId, channelId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'INSERT INTO guild_settings (guild_id, setting_name, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+      [guildId, 'welcome_channel', channelId],
+      (err) => {
+        if (err) {
+          console.error('Error setting welcome channel:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const getWelcomeChannel = (guildId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT setting_value FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
+      [guildId, 'welcome_channel'],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting welcome channel:', err);
+          reject(err);
+        } else {
+          const welcomeChannel = results.length > 0 ? results[0].setting_value : null;
+          resolve(welcomeChannel);
+        }
+      }
+    );
+  });
+};
+
+const removeWelcomeChannel = (guildId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'DELETE FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
+      [guildId, 'welcome_channel'],
+      (err) => {
+        if (err) {
+          console.error('Error removing welcome channel:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const setWelcomeMessage = (guildId, message) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'INSERT INTO guild_settings (guild_id, setting_name, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+      [guildId, 'welcome_message', message],
+      (err) => {
+        if (err) {
+          console.error('Error setting welcome message:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
+const getWelcomeMessage = (guildId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'SELECT setting_value FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
+      [guildId, 'welcome_message'],
+      (err, results) => {
+        if (err) {
+          console.error('Error getting welcome message:', err);
+          reject(err);
+        } else {
+          const welcomeMessage = results.length > 0 ? results[0].setting_value : null;
+          resolve(welcomeMessage);
+        }
+      }
+    );
+  });
+};
+
+const removeWelcomeMessage = (guildId) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'DELETE FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
+      [guildId, 'welcome_message'],
+      (err) => {
+        if (err) {
+          console.error('Error removing welcome message:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
 };
 
 module.exports = {
@@ -287,4 +673,24 @@ module.exports = {
   setStoryChannel,
   getStoryChannel,
   removeStoryChannel,
+  getStoryChannels,
+  getBalance,
+  setBalance,
+  addBalance,
+  removeBalance,
+  addCustomCommand,
+  removeCustomCommand,
+  executeCustomCommand,
+  getCustomCommands,
+  getCustomCommandLimit,
+  setCustomCommandLimit,
+  isSuggestionBlacklisted,
+  addSuggestionBlacklist,
+  removeSuggestionBlacklist,
+  setWelcomeChannel,
+  getWelcomeChannel,
+  removeWelcomeChannel,
+  setWelcomeMessage,
+  getWelcomeMessage,
+  removeWelcomeMessage,
 };

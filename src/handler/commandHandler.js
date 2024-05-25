@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { Collection } = require('discord.js');
 const { prefix } = require('../config');
-const { hasPremiumSubscription, getRolePermissionLevel } = require('../database/database');
+const { hasPremiumSubscription, getRolePermissionLevel, executeCustomCommand } = require('../database/database');
 
 class CommandHandler {
   constructor(client) {
@@ -58,8 +58,13 @@ class CommandHandler {
     const command = this.commands.get(commandName) || this.commands.find((cmd) => cmd.aliases && cmd.aliases.includes(commandName));
 
     if (!command) {
-      console.log(`No command found for: ${commandName}`);
-      return;
+      const customResponse = await executeCustomCommand(message.guild.id, commandName);
+      if (customResponse) {
+        return message.channel.send(customResponse);
+      } else {
+        console.log(`No command or custom command found for: ${commandName}`);
+        return;
+      }
     }
 
     console.log(`Found command: ${command.name}`);
@@ -67,7 +72,7 @@ class CommandHandler {
     const isPremiumUser = await hasPremiumSubscription(message.author.id);
 
     if (command.premium && !isPremiumUser) {
-      return message.reply('This command is only available for premium users.');
+      return message.channel.send('This command is only available for premium users.');
     }
 
     const isServerOwner = message.guild.ownerId === message.author.id;
@@ -81,11 +86,11 @@ class CommandHandler {
         if (command.permissionLevel && command.permissionLevel.includes(userPermissionLevel)) {
           this.executeCommand(message, args, command);
         } else {
-          return message.reply('You do not have permission to use this command.');
+          return message.channel.send('You do not have permission to use this command.');
         }
       } catch (error) {
         console.error('Error getting user permission level:', error);
-        return message.reply('An error occurred while checking your permissions.');
+        return message.channel.send('An error occurred while checking your permissions.');
       }
     }
   }
@@ -142,7 +147,7 @@ class CommandHandler {
 
       if (now < expirationTime) {
         const timeLeft = (expirationTime - now) / 1000;
-        return message.reply(`Please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.name}\` command.`);
+        return message.channel.send(`Please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.name}\` command.`);
       }
     }
 
@@ -153,7 +158,7 @@ class CommandHandler {
       command.execute(message, args, this.client, this.commands, this.slashCommands);
     } catch (error) {
       console.error(`Error executing command ${command.name}:`, error);
-      message.reply('There was an error trying to execute that command!');
+      message.channel.send('There was an error trying to execute that command!');
     }
   }
 

@@ -29,25 +29,31 @@ module.exports = {
         return message.reply('Invalid channel. Please provide a valid channel mention, ID, or name.');
       }
 
-      getStoryChannel(message.guild.id, (currentStoryChannel) => {
+      try {
+        const currentStoryChannel = await getStoryChannel(message.guild.id);
         if (currentStoryChannel) {
           message.reply(`The story channel is already set to <#${currentStoryChannel}>. Please remove it before setting a new one.`);
         } else {
-          setStoryChannel(message.guild.id, channelId, () => {
-            message.reply(`Set the story channel to <#${channelId}>.`);
-          });
+          await setStoryChannel(message.guild.id, channelId);
+          message.reply(`Set the story channel to <#${channelId}>.`);
         }
-      });
+      } catch (error) {
+        console.error('Error setting story channel:', error);
+        message.reply('An error occurred while setting the story channel.');
+      }
     } else if (subcommand === 'remove') {
-      getStoryChannel(message.guild.id, (currentStoryChannel) => {
+      try {
+        const currentStoryChannel = await getStoryChannel(message.guild.id);
         if (currentStoryChannel) {
-          removeStoryChannel(message.guild.id, () => {
-            message.reply(`Removed the story channel <#${currentStoryChannel}>.`);
-          });
+          await removeStoryChannel(message.guild.id);
+          message.reply(`Removed the story channel <#${currentStoryChannel}>.`);
         } else {
           message.reply('There is no story channel set.');
         }
-      });
+      } catch (error) {
+        console.error('Error removing story channel:', error);
+        message.reply('An error occurred while removing the story channel.');
+      }
     } else {
       message.reply('Invalid subcommand. Please use `add` or `remove`.');
     }
@@ -82,25 +88,31 @@ module.exports = {
     if (subcommand === 'add') {
       const channelId = interaction.options.getChannel('channel').id;
 
-      getStoryChannel(interaction.guild.id, (currentStoryChannel) => {
+      try {
+        const currentStoryChannel = await getStoryChannel(interaction.guild.id);
         if (currentStoryChannel) {
           interaction.reply(`The story channel is already set to <#${currentStoryChannel}>. Please remove it before setting a new one.`);
         } else {
-          setStoryChannel(interaction.guild.id, channelId, () => {
-            interaction.reply(`Set the story channel to <#${channelId}>.`);
-          });
+          await setStoryChannel(interaction.guild.id, channelId);
+          interaction.reply(`Set the story channel to <#${channelId}>.`);
         }
-      });
+      } catch (error) {
+        console.error('Error setting story channel:', error);
+        interaction.reply('An error occurred while setting the story channel.');
+      }
     } else if (subcommand === 'remove') {
-      getStoryChannel(interaction.guild.id, (currentStoryChannel) => {
+      try {
+        const currentStoryChannel = await getStoryChannel(interaction.guild.id);
         if (currentStoryChannel) {
-          removeStoryChannel(interaction.guild.id, () => {
-            interaction.reply(`Removed the story channel <#${currentStoryChannel}>.`);
-          });
+          await removeStoryChannel(interaction.guild.id);
+          interaction.reply(`Removed the story channel <#${currentStoryChannel}>.`);
         } else {
           interaction.reply('There is no story channel set.');
         }
-      });
+      } catch (error) {
+        console.error('Error removing story channel:', error);
+        interaction.reply('An error occurred while removing the story channel.');
+      }
     }
   },
 };

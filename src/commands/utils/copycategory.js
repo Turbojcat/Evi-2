@@ -4,9 +4,9 @@ const { hasPremiumSubscription } = require('../../database/database');
 
 module.exports = {
   name: 'copycategory',
-  description: 'Copies a category with all its permissions (premium only)',
-  usage: '<source-category> <destination-category>',
-  aliases: ['copycat', 'cc'],
+  description: 'Creates a new category with the same permissions as the source category (premium only)',
+  usage: '<source-category-id>',
+  aliases: ['copycat', 'copyc'],
   permissions: ['MANAGE_CHANNELS'],
   premium: true,
   execute: async (message, args) => {
@@ -15,54 +15,41 @@ module.exports = {
       return message.reply('This command is only available for premium users.');
     }
 
-    const sourceCategoryName = args[0];
-    const destinationCategoryName = args[1];
+    const sourceCategoryId = args[0];
+    console.log('Source Category ID:', sourceCategoryId);
 
-    if (!sourceCategoryName || !destinationCategoryName) {
-      return message.reply('Please provide the source and destination category names.');
+    if (!sourceCategoryId) {
+      return message.reply('Please provide the source category ID.');
     }
 
-    const sourceCategory = message.guild.channels.cache.find(
-      (channel) => channel.type === 'GUILD_CATEGORY' && channel.name === sourceCategoryName
-    );
+    const sourceCategory = message.guild.channels.cache.get(sourceCategoryId);
+    console.log('Source Category (get):', sourceCategory);
+
+    const categories = message.guild.channels.cache.filter(channel => channel.type === 'GUILD_CATEGORY');
+    console.log('Categories:', categories.map(category => ({ id: category.id, name: category.name })));
 
     if (!sourceCategory) {
-      return message.reply(`Category "${sourceCategoryName}" not found.`);
+      return message.reply('Invalid source category ID. Please provide a valid category ID.');
     }
 
-    const destinationCategory = message.guild.channels.cache.find(
-      (channel) => channel.type === 'GUILD_CATEGORY' && channel.name === destinationCategoryName
-    );
+    console.log('Source Category Name:', sourceCategory.name);
 
-    if (destinationCategory) {
-      return message.reply(`Category "${destinationCategoryName}" already exists.`);
+    try {
+      const newCategory = await sourceCategory.clone();
+      message.reply(`New category "${newCategory.name}" created with the same permissions as "${sourceCategory.name}".`);
+    } catch (error) {
+      console.error('Error creating category:', error);
+      message.reply('An error occurred while creating the category. Please check the provided category ID and try again.');
     }
-
-    const newCategory = await message.guild.channels.create(destinationCategoryName, {
-      type: 'GUILD_CATEGORY',
-      permissionOverwrites: sourceCategory.permissionOverwrites.cache.map((overwrite) => ({
-        id: overwrite.id,
-        allow: new PermissionsBitField(overwrite.allow),
-        deny: new PermissionsBitField(overwrite.deny),
-      })),
-    });
-
-    message.reply(`Category "${destinationCategoryName}" created with permissions copied from "${sourceCategoryName}".`);
   },
   data: {
     name: 'copycategory',
-    description: 'Copies a category with all its permissions (premium only)',
+    description: 'Creates a new category with the same permissions as the source category (premium only)',
     options: [
       {
         name: 'source-category',
-        type: 3, // STRING
-        description: 'The name of the source category',
-        required: true,
-      },
-      {
-        name: 'destination-category',
-        type: 3, // STRING
-        description: 'The name of the destination category',
+        type: 7, // CHANNEL
+        description: 'The source category to copy permissions from',
         required: true,
       },
     ],
@@ -73,34 +60,21 @@ module.exports = {
       return interaction.reply({ content: 'This command is only available for premium users.', ephemeral: true });
     }
 
-    const sourceCategoryName = interaction.options.getString('source-category');
-    const destinationCategoryName = interaction.options.getString('destination-category');
+    const sourceCategory = interaction.options.getChannel('source-category');
+    console.log('Source Category (Slash):', sourceCategory);
 
-    const sourceCategory = interaction.guild.channels.cache.find(
-      (channel) => channel.type === 'GUILD_CATEGORY' && channel.name === sourceCategoryName
-    );
-
-    if (!sourceCategory) {
-      return interaction.reply({ content: `Category "${sourceCategoryName}" not found.`, ephemeral: true });
+    if (!sourceCategory || sourceCategory.type !== 'GUILD_CATEGORY') {
+      return interaction.reply({ content: 'Invalid source category. Please provide a valid category.', ephemeral: true });
     }
 
-    const destinationCategory = interaction.guild.channels.cache.find(
-      (channel) => channel.type === 'GUILD_CATEGORY' && channel.name === destinationCategoryName
-    );
+    console.log('Source Category Name (Slash):', sourceCategory.name);
 
-    if (destinationCategory) {
-      return interaction.reply({ content: `Category "${destinationCategoryName}" already exists.`, ephemeral: true });
+    try {
+      const newCategory = await sourceCategory.clone();
+      interaction.reply(`New category "${newCategory.name}" created with the same permissions as "${sourceCategory.name}".`);
+    } catch (error) {
+      console.error('Error creating category (Slash):', error);
+      interaction.reply({ content: 'An error occurred while creating the category. Please check the provided category and try again.', ephemeral: true });
     }
-
-    const newCategory = await interaction.guild.channels.create(destinationCategoryName, {
-      type: 'GUILD_CATEGORY',
-      permissionOverwrites: sourceCategory.permissionOverwrites.cache.map((overwrite) => ({
-        id: overwrite.id,
-        allow: new PermissionsBitField(overwrite.allow),
-        deny: new PermissionsBitField(overwrite.deny),
-      })),
-    });
-
-    interaction.reply(`Category "${destinationCategoryName}" created with permissions copied from "${sourceCategoryName}".`);
   },
 };

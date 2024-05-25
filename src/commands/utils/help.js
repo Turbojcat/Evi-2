@@ -57,7 +57,8 @@ async function executePrefix(message, args, client, commands, slashCommands) {
         { name: 'Usage', value: `\`${prefix}${command.name} ${command.usage || ''}\``, inline: true },
         { name: 'Aliases', value: command.aliases ? command.aliases.join(', ') : 'None', inline: true },
         { name: 'Cooldown', value: `${command.cooldown || 0} second(s)`, inline: true },
-        { name: 'Permissions', value: command.permissions ? command.permissions.join(', ') : 'None', inline: true },
+        { name: 'Premium', value: command.premium ? 'Yes' : 'No', inline: true },
+        { name: 'Permission Level', value: command.permissionLevel ? command.permissionLevel.join(', ') : 'normal', inline: true },
         { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
         { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
       )
@@ -85,18 +86,22 @@ async function executePrefix(message, args, client, commands, slashCommands) {
       }
 
       const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter((file) => file.endsWith('.js'));
-      const commandList = commandFiles.map((file) => {
+      const commandFields = [];
+
+      for (const file of commandFiles) {
         const commandName = file.slice(0, -3);
         const command = commands.get(commandName);
-        if (!command) return null;
+        if (!command) continue;
         const isPremium = command.premium;
         const hasPermission = command.permissionLevel ? command.permissionLevel.includes(userPermissionLevel) : true;
         command.category = folder; // Legg til kategori basert på mappenavn
-        return hasPermission ? `\`${commandName}${isPremium ? " *" : " ^"}\`` : null;
-      }).filter(Boolean).join(', ');
+        if (hasPermission) {
+          commandFields.push({ name: `\`${commandName}${isPremium ? " *" : " ^"}\``, value: command.description });
+        }
+      }
 
-      if (commandList) {
-        if (embed.data && embed.data.fields && (embed.data.fields.length === 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + 1 === 25))) {
+      if (commandFields.length > 0) {
+        if (embed.data && embed.data.fields && (embed.data.fields.length + commandFields.length > 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + commandFields.length > 25))) {
           pages.push(embed);
           embed = new EmbedBuilder()
             .setColor('#0099ff')
@@ -105,7 +110,8 @@ async function executePrefix(message, args, client, commands, slashCommands) {
             .setTimestamp();
         }
 
-        embed.addFields({ name: folder.toUpperCase(), value: commandList });
+        console.log('Command Fields:', commandFields);
+        embed.addFields(...commandFields);
       }
     }
 
@@ -172,7 +178,8 @@ async function executeSlash(interaction, client, commands, slashCommands) {
       .setDescription(command.data.description)
       .addFields(
         { name: 'Cooldown', value: `${command.cooldown || 0} second(s)`, inline: true },
-        { name: 'Permissions', value: command.permissions ? command.permissions.join(', ') : 'None', inline: true },
+        { name: 'Premium', value: command.premium ? 'Yes' : 'No', inline: true },
+        { name: 'Permission Level', value: command.permissionLevel ? command.permissionLevel.join(', ') : 'normal', inline: true },
         { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
         { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
       )
@@ -200,18 +207,22 @@ async function executeSlash(interaction, client, commands, slashCommands) {
       }
 
       const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter((file) => file.endsWith('.js'));
-      const commandList = commandFiles.map((file) => {
+      const commandFields = [];
+
+      for (const file of commandFiles) {
         const commandName = file.slice(0, -3);
         const command = slashCommands.get(commandName);
-        if (!command) return null;
+        if (!command) continue;
         const isPremium = command.premium;
         const hasPermission = command.permissionLevel ? command.permissionLevel.includes(userPermissionLevel) : true;
         command.category = folder; // Legg til kategori basert på mappenavn
-        return hasPermission ? `\`${commandName}${isPremium ? '*' : '^'}\`` : null;
-      }).filter(Boolean).join(', ');
+        if (hasPermission) {
+          commandFields.push({ name: `\`${commandName}${isPremium ? " *" : " ^"}\``, value: command.data.description });
+        }
+      }
 
-      if (commandList) {
-        if (embed.data && embed.data.fields && (embed.data.fields.length === 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + 1 === 25))) {
+      if (commandFields.length > 0) {
+        if (embed.data && embed.data.fields && (embed.data.fields.length + commandFields.length > 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + commandFields.length > 25))) {
           pages.push(embed);
           embed = new EmbedBuilder()
             .setColor('#0099ff')
@@ -220,7 +231,8 @@ async function executeSlash(interaction, client, commands, slashCommands) {
             .setTimestamp();
         }
 
-        embed.addFields({ name: folder.toUpperCase(), value: commandList });
+        console.log('Command Fields:', commandFields);
+        embed.addFields(...commandFields);
       }
     }
 

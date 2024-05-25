@@ -1,11 +1,12 @@
 // src/commands/developer/evistory.js
 const { EmbedBuilder } = require('discord.js');
-const { getStoryChannel } = require('../../database/database');
+const { getStoryChannels } = require('../../database/database');
 
 module.exports = {
   name: 'evistory',
-  description: 'Posts a story in the designated story channel (developer only)',
+  description: 'Posts a story in the designated story channels across all servers (developer only)',
   usage: '<story>',
+  aliases: ['es'],
   permissions: [],
   execute: async (message, args) => {
     const developerIDs = process.env.DEVELOPER_IDS.split(',');
@@ -13,27 +14,36 @@ module.exports = {
       return message.reply('This command is only available for developers.');
     }
 
-    const storyChannel = await getStoryChannel(message.guild.id);
-    if (!storyChannel) {
-      return message.reply('No story channel has been set. Please use the `evistorychannel` command to set a channel.');
-    }
+    try {
+      const storyChannels = await getStoryChannels();
+      if (storyChannels.length === 0) {
+        return message.reply('No story channels have been set on any server.');
+      }
 
-    const story = args.join(' ');
-    if (!story) {
-      return message.reply('Please provide a story to post.');
-    }
+      const story = args.join(' ');
+      if (!story) {
+        return message.reply('Please provide a story to post.');
+      }
 
-    const channel = message.guild.channels.cache.get(storyChannel);
-    if (!channel) {
-      return message.reply('The designated story channel could not be found.');
-    }
+      for (const storyChannel of storyChannels) {
+        const guild = message.client.guilds.cache.get(storyChannel.guild_id);
+        if (guild) {
+          const channel = guild.channels.cache.get(storyChannel.setting_value);
+          if (channel) {
+            await channel.send(story);
+          }
+        }
+      }
 
-    await channel.send(story);
-    message.reply('Story posted successfully!');
+      message.reply('Story posted successfully across all servers!');
+    } catch (error) {
+      console.error('Error posting story:', error);
+      message.reply('An error occurred while posting the story.');
+    }
   },
   data: {
     name: 'evistory',
-    description: 'Posts a story in the designated story channel (developer only)',
+    description: 'Posts a story in the designated story channels across all servers (developer only)',
     options: [
       {
         name: 'story',
@@ -62,42 +72,56 @@ module.exports = {
       return interaction.reply({ content: 'This command is only available for developers.', ephemeral: true });
     }
 
-    const storyChannel = await getStoryChannel(interaction.guild.id);
-    if (!storyChannel) {
-      return interaction.reply({ content: 'No story channel has been set. Please use the `evistorychannel` command to set a channel.', ephemeral: true });
-    }
+    try {
+      const storyChannels = await getStoryChannels();
+      if (storyChannels.length === 0) {
+        return interaction.reply({ content: 'No story channels have been set on any server.', ephemeral: true });
+      }
 
-    const subcommand = interaction.options.getSubcommand();
+      const subcommand = interaction.options.getSubcommand();
 
-    if (subcommand === 'embed') {
-      const embedData = interaction.options.getString('embed_data');
+      if (subcommand === 'embed') {
+        const embedData = interaction.options.getString('embed_data');
 
-      try {
-        const embed = JSON.parse(embedData);
-        const channel = interaction.guild.channels.cache.get(storyChannel);
-        if (!channel) {
-          return interaction.reply({ content: 'The designated story channel could not be found.', ephemeral: true });
+        try {
+          const embed = JSON.parse(embedData);
+
+          for (const storyChannel of storyChannels) {
+            const guild = interaction.client.guilds.cache.get(storyChannel.guild_id);
+            if (guild) {
+              const channel = guild.channels.cache.get(storyChannel.setting_value);
+              if (channel) {
+                await channel.send({ embeds: [embed] });
+              }
+            }
+          }
+
+          interaction.reply({ content: 'Story posted successfully across all servers!', ephemeral: true });
+        } catch (error) {
+          console.error('Error parsing embed data:', error);
+          interaction.reply({ content: 'Invalid embed data. Please provide valid JSON data generated from https://embed.dan.onl/.', ephemeral: true });
+        }
+      } else {
+        const story = interaction.options.getString('story');
+        if (!story) {
+          return interaction.reply({ content: 'Please provide a story to post.', ephemeral: true });
         }
 
-        await channel.send({ embeds: [embed] });
-        interaction.reply({ content: 'Story posted successfully!', ephemeral: true });
-      } catch (error) {
-        console.error('Error parsing embed data:', error);
-        interaction.reply({ content: 'Invalid embed data. Please provide valid JSON data generated from https://embed.dan.onl/.', ephemeral: true });
-      }
-    } else {
-      const story = interaction.options.getString('story');
-      if (!story) {
-        return interaction.reply({ content: 'Please provide a story to post.', ephemeral: true });
-      }
+        for (const storyChannel of storyChannels) {
+          const guild = interaction.client.guilds.cache.get(storyChannel.guild_id);
+          if (guild) {
+            const channel = guild.channels.cache.get(storyChannel.setting_value);
+            if (channel) {
+              await channel.send(story);
+            }
+          }
+        }
 
-      const channel = interaction.guild.channels.cache.get(storyChannel);
-      if (!channel) {
-        return interaction.reply({ content: 'The designated story channel could not be found.', ephemeral: true });
+        interaction.reply({ content: 'Story posted successfully across all servers!', ephemeral: true });
       }
-
-      await channel.send(story);
-      interaction.reply({ content: 'Story posted successfully!', ephemeral: true });
+    } catch (error) {
+      console.error('Error posting story:', error);
+      interaction.reply({ content: 'An error occurred while posting the story.', ephemeral: true });
     }
   },
 };

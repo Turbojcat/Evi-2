@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
 const { token } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
-const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole } = require('./database/database');
+const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, getWelcomeChannel, getWelcomeMessage } = require('./database/database');
 
 const client = new Client({
   intents: [
@@ -79,6 +79,21 @@ client.on('guildCreate', async (guild) => {
     addOwnerRole(guild.id, ownerId, () => {
       console.log(`Added owner role for user ${ownerMember.user.tag} (${ownerId}) in guild ${guild.name} (${guild.id})`);
     });
+  }
+});
+
+client.on('guildMemberAdd', async (member) => {
+  const welcomeChannelId = await getWelcomeChannel(member.guild.id);
+  const welcomeMessage = await getWelcomeMessage(member.guild.id);
+
+  if (welcomeChannelId && welcomeMessage) {
+    const welcomeChannel = member.guild.channels.cache.get(welcomeChannelId);
+    if (welcomeChannel) {
+      const formattedMessage = welcomeMessage
+        .replace('{user}', member.user.toString())
+        .replace('{server}', member.guild.name);
+      welcomeChannel.send(formattedMessage);
+    }
   }
 });
 

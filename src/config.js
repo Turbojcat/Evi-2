@@ -9,6 +9,8 @@ module.exports = {
   clientSecret: process.env.CLIENT_SECRET,
   callbackUrl: process.env.CALLBACK_URL,
   sessionSecret: process.env.SESSION_SECRET,
+  suggestionChannelId: '1243887358974234674',
+  blacklistLogChannelId: '1243887500737511498',
   dbConfig: {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
