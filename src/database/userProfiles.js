@@ -44,12 +44,12 @@ const updateUserProfile = async (userId, guildId, profileData) => {
       [
         userId,
         guildId,
-        profileData.aboutMe,
-        JSON.stringify(profileData.links),
-        profileData.birthday,
-        profileData.location,
-        JSON.stringify(profileData.interests),
-        profileData.story,
+        profileData.aboutMe || null,
+        profileData.links ? JSON.stringify(profileData.links) : null,
+        profileData.birthday || null,
+        profileData.location || null,
+        profileData.interests ? JSON.stringify(profileData.interests) : null,
+        profileData.story || null,
       ],
       (error) => {
         if (error) {

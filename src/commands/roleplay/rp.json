@@ -1,0 +1,719 @@
+{
+    "annoy": {
+        "description": "Let someone know you're annoyed",
+        "mention": "is annoyed with {mentions}",
+        "noMention": "is annoyed",
+        "victimString": "was annoying {v_num} times",
+        "perpString": "got annoyed {p_num} times",
+        "aliases": ["annoyed"]
+    },
+    "armwrestle": {
+        "description": "You're up to armwrestle someone",
+        "mention": "armwrestles {mentions}",
+        "noMention": "wants to armwrestle",
+        "victimString": "got armwrestled {v_num} times",
+        "perpString": "armwrestled others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "attack": {
+        "description": "Attack someone",
+        "mention": "viciously attacks {mentions}",
+        "noMention": "wants to be attacked",
+        "victimString": "got attacked {v_num} times",
+        "perpString": "attacked others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "baka": {
+        "description": "Do a baka",
+        "mention": "calls {mentions} baka(s)",
+        "noMention": "wants to be called a baka",
+        "victimString": "got called a baka {v_num} times",
+        "perpString": "called others baka {p_num} times",
+        "ignoreNoMention": true
+    },
+    "bite": {
+        "description": "Bite someone. You know you want to.",
+        "mention": "bites {mentions}",
+        "noMention": "wants to be bitten",
+        "victimString": "got bitten {v_num} times",
+        "perpString": "bit someone {p_num} times",
+        "ignoreNoMention": true
+    },
+    "blowkiss": {
+        "description": "Blow a kiss",
+        "mention": "blows a kiss to {mentions}",
+        "noMention": "wants to be blown a kiss",
+        "victimString": "got blown {v_num} kisses",
+        "perpString": "blew {p_num} kisses",
+        "ignoreNoMention": true
+    },
+    "blush": {
+        "description": "Blush at someone",
+        "mention": "blushes at {mentions}",
+        "noMention": "blushes",
+        "victimString": "got blushed at {v_num} times",
+        "perpString": "blushed {p_num} times"
+    },
+    "bonk": {
+        "description": "Bonk someone",
+        "mention": "bonks {mentions}",
+        "noMention": "wants to be bonked",
+        "victimString": "got bonked {v_num} times",
+        "perpString": "bonked others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "boop": {
+        "description": "Boop someone",
+        "mention": "boops {mentions}",
+        "noMention": "wants to be booped",
+        "victimString": "got booped {v_num} times",
+        "perpString": "booped others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "bored": {
+        "description": "Let people know they're boring",
+        "mention": "is bored with {mentions}",
+        "noMention": "is bored",
+        "victimString": "was called boring {v_num} times",
+        "perpString": "was bored {p_num} times",
+        "aliases": ["boring"]
+    },
+    "bully": {
+        "description": "Bully someone",
+        "mention": "bullies {mentions}",
+        "noMention": "wants to bully someone",
+        "victimString": "was bullied {v_num} times",
+        "perpString": "was a bully {p_num} times",
+        "ignoreNoMention": true
+    },
+    "bye": {
+        "description": "Say bye to people",
+        "mention": "says bye to {mentions}",
+        "noMention": "says bye to everyone",
+        "victimString": "was told bye {v_num} times",
+        "perpString": "said bye {p_num} times"
+    },
+    "chase": {
+        "description": "Chase someone",
+        "mention": "chases {mentions}",
+        "noMention": "wants to chase someone",
+        "victimString": "was chased {v_num} times",
+        "perpString": "chased others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "cheer": {
+        "description": "Cheer at people",
+        "mention": "cheers at {mentions}",
+        "noMention": "cheers at everyone",
+        "victimString": "was cheered on {v_num} times",
+        "perpString": "cheered {p_num} times"
+    },
+    "confused": {
+        "description": "Show you're confused",
+        "mention": "is confused by {mentions}",
+        "noMention": "is confused",
+        "victimString": "confused others {v_num} times",
+        "perpString": "was confused {p_num} times"
+    },
+    "cry": {
+        "description": "Let people know you're crying",
+        "mention": "{mentions} made {author} cry",
+        "noMention": "cries",
+        "victimString": "made others cry {v_num} times",
+        "perpString": "cried {p_num} times"
+    },
+    "cuddle": {
+        "description": "Cuddle others",
+        "mention": "cuddles {mentions}",
+        "noMention": "wants to be cuddled",
+        "victimString": "got cuddled {v_num} times",
+        "perpString": "cuddled others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "dab": {
+        "description": "Dab at others",
+        "mention": "dabs at {mentions}",
+        "noMention": "dabs proudly",
+        "victimString": "got dabbed at {v_num} times",
+        "perpString": "dabbed {p_num} times"
+    },
+    "dance": {
+        "description": "Dance with others",
+        "mention": "dances with {mentions}",
+        "noMention": "performs a dance",
+        "victimString": "got danced with {v_num} times",
+        "perpString": "danced {p_num} times"
+    },
+    "defend": {
+        "description": "Defend someone",
+        "mention": "defends {mentions}",
+        "noMention": "wants to be defended",
+        "victimString": "got defended {v_num} times",
+        "perpString": "defended others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "dodge": {
+        "description": "Dodge something",
+        "mention": "dodges {mentions}",
+        "noMention": "dodges thin air",
+        "victimString": "got dodged {v_num} times",
+        "perpString": "dodged things {p_num} times"
+    },
+    "drag": {
+        "description": "Drag someone",
+        "mention": "drags {mentions}",
+        "noMention": "wants to drag someone",
+        "victimString": "got dragged {v_num} times",
+        "perpString": "dragged others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "eat": {
+        "description": "Eat (someone)",
+        "mention": "eats {mentions}",
+        "noMention": "wants to eat",
+        "victimString": "got eaten {v_num} times",
+        "perpString": "ate {p_num} times",
+        "ignoreNoMention": true
+    },
+    "excited": {
+        "description": "Show your excitement",
+        "mention": "is excited with {mentions}",
+        "noMention": "is excited",
+        "victimString": "was exciting {v_num} times",
+        "perpString": "was excited {p_num} times"
+    },
+    "facepalm": {
+        "description": "Perform a facepalm",
+        "mention": "facepalms at {mentions}",
+        "noMention": "facepalms",
+        "victimString": "got facepalmed at {v_num} times",
+        "perpString": "facepalmed {p_num} times"
+    },
+    "fallover": {
+        "description": "Fall over",
+        "mention": "falls over in the direction of {mentions}",
+        "noMention": "falls over",
+        "victimString": "got fallen towards {v_num} times",
+        "perpString": "fell over {p_num} times"
+    },
+    "fear": {
+        "description": "Be afraid or fear someone",
+        "mention": "fears {mentions}",
+        "noMention": "is afraid",
+        "victimString": "was feared {v_num} times",
+        "perpString": "got feared {p_num} times"
+    },
+    "feed": {
+        "description": "Feed someone",
+        "mention": "feeds {mentions}",
+        "noMention": "wants to be fed",
+        "victimString": "was fed {v_num} times",
+        "perpString": "fed others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "fight": {
+        "description": "Fight someone",
+        "mention": "fights {mentions}",
+        "noMention": "wants to fight",
+        "victimString": "got fought {v_num} times",
+        "perpString": "fought others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "fire": {
+        "description": "Throw fire at someone",
+        "mention": "throws fire at {mentions}",
+        "noMention": "wants to throw fire at someone",
+        "victimString": "got thrown fire at {v_num} times",
+        "perpString": "threw fire {p_num} times",
+        "ignoreNoMention": true
+    },
+    "glomp": {
+        "description": "Glomp at someone",
+        "mention": "glomps {mentions}",
+        "noMention": "wants to get glomped",
+        "victimString": "got glomped {v_num} times",
+        "perpString": "glomped others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "goodmorning": {
+        "description": "Greet someone good morning",
+        "mention": "wishes {mentions} a good morning",
+        "noMention": "wishes everyone a good morning",
+        "victimString": "was wished a good morning {v_num} times",
+        "perpString": "wished others good morning {p_num} times"
+    },
+    "goodnight": {
+        "description": "Greet someone good night",
+        "mention": "wishes {mentions} a good night",
+        "noMention": "wishes everyone a good night",
+        "victimString": "was wished a good night {v_num} times",
+        "perpString": "wished others good night {p_num} times"
+    },
+    "grouphug": {
+        "description": "Hand out a group hug",
+        "mention": "gives a group hug to {mentions}",
+        "noMention": "wants a group hug",
+        "victimString": "was group hugged {v_num} times",
+        "perpString": "gave {p_num} group hugs",
+        "ignoreNoMention": true
+    },
+    "grumpy": {
+        "description": "Let people know you are grumpy",
+        "mention": "is grumpy because of {mentions}",
+        "noMention": "is grumpy",
+        "victimString": "caused others to be grumpy {v_num} times",
+        "perpString": "felt grumpy about others {p_num} times"
+    },
+    "happy": {
+        "description": "Let people know you are happy",
+        "mention": "is happy with {mentions}",
+        "noMention": "is happy",
+        "victimString": "made others happy {v_num} times",
+        "perpString": "felt happy {p_num} times"
+    },
+    "hate": {
+        "description": "Show your hatred",
+        "mention": "hates {mentions}",
+        "noMention": "wants to be hated",
+        "victimString": "got hated {v_num} times",
+        "perpString": "hated others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "headpat": {
+        "description": "Pat someone on the head",
+        "mention": "pats {mentions} on the head",
+        "noMention": "wants a pat on the head",
+        "victimString": "was patted {v_num} times",
+        "perpString": "patted others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "hello": {
+        "description": "Say hello",
+        "mention": "says hello to {mentions}",
+        "noMention": "says hello to everyone",
+        "victimString": "was greeted hello {v_num} times",
+        "perpString": "said hello {p_num} times"
+    },
+    "highfive": {
+        "description": "Give out a high five",
+        "mention": "High fives {mentions}",
+        "noMention": "wants a high five",
+        "victimString": "was high fived {v_num} times",
+        "perpString": "high fived other {p_num} times",
+        "ignoreNoMention": true
+    },
+    "holdhand": {
+        "description": "Hold hands with someone",
+        "mention": "holds hands with {mentions}",
+        "noMention": "wants someone to hold their hand",
+        "victimString": "was held hands with {v_num} times",
+        "perpString": "held others hands {p_num} times",
+        "ignoreNoMention": true
+    },
+    "hug": {
+        "description": "Hug someone",
+        "mention": "hugs {mentions}",
+        "noMention": "wants someone to hug",
+        "victimString": "was hugged {v_num} times",
+        "perpString": "hugged others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "hungry": {
+        "description": "Let people know you're hungry",
+        "mention": "is hungry for some {mentions}",
+        "noMention": "is hungry",
+        "victimString": "made someone hungry {v_num} times",
+        "perpString": "was hungry {p_num} times"
+    },
+    "iil": {
+        "description": "Let people know you're in love",
+        "mention": "is in love with {mentions}",
+        "noMention": "is in love",
+        "victimString": "was loved {v_num} times",
+        "perpString": "was in love {p_num} times"
+    },
+    "ily": {
+        "description": "Let people know who you love",
+        "mention": "is in love with {mentions}",
+        "noMention": "proclaims `I'm im love`",
+        "victimString": "was loved {v_num} times",
+        "perpString": "confessed their love {p_num} times"
+    },
+    "jump": {
+        "description": "Jump someone",
+        "mention": "jumps on {mentions}",
+        "noMention": "suddenly jumps",
+        "victimString": "got jumped {v_num} times",
+        "perpString": "jumped others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "kawaii": {
+        "description": "Let someone know they're kawaii",
+        "mention": "thinks {mentions} is kawaii",
+        "noMention": "is feeling kawaii",
+        "victimString": "was called kawaii {v_num} times",
+        "perpString": "called other kawaii {p_num} times"
+    },
+    "kill": {
+        "description": "Kill someone",
+        "mention": "kills {mentions}",
+        "noMention": "wants to kill something",
+        "victimString": "was killed {v_num} times",
+        "perpString": "killed others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "kiss": {
+        "description": "Kiss someone",
+        "mention": "kisses {mentions}",
+        "noMention": "wants to be kissed",
+        "victimString": "was kissed {v_num} times",
+        "perpString": "kissed others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "laugh": {
+        "description": "Laugh out loud",
+        "mention": "laughs at {mentions}",
+        "noMention": "laughs",
+        "victimString": "was laughed at {v_num} times",
+        "perpString": "laughed at others {p_num} times"
+    },
+    "lick": {
+        "description": "Lick someone",
+        "mention": "licks {mentions}",
+        "noMention": "wants to be licked",
+        "victimString": "was licked {v_num} times",
+        "perpString": "licked others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "love": {
+        "description": "Confess your love",
+        "mention": "loves {mentions}",
+        "noMention": "wants to be loved",
+        "victimString": "was loved {v_num} times",
+        "perpString": "loved others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "mad": {
+        "description": "Let someone know you're mad",
+        "mention": "is mad at {mentions}",
+        "noMention": "is mad",
+        "victimString": "made others mad {v_num} times",
+        "perpString": "was mad {p_num} times"
+    },
+    "no": {
+        "description": "Say no",
+        "mention": "says no to {mentions}",
+        "noMention": "says no",
+        "victimString": "got told no {v_num} times",
+        "perpString": "said no {p_num} times"
+    },
+    "nom": {
+        "description": "Nom someone",
+        "mention": "noms {mentions}",
+        "noMention": "wants to be nommed",
+        "victimString": "got nommed {v_num} times",
+        "perpString": "nommed others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "nope": {
+        "description": "Say nope",
+        "mention": "tells {mentions} nope",
+        "noMention": "says nope",
+        "victimString": "got told nope {v_num} times",
+        "perpString": "noped others {p_num} times"
+    },
+    "panic": {
+        "description": "Panic. Just... panic!",
+        "mention": "panics at {mentions}",
+        "noMention": "panics",
+        "victimString": "made someone panic {v_num} times",
+        "perpString": "panicced {p_num} times"
+    },
+    "pat": {
+        "description": "Pat someone",
+        "mention": "pats {mentions} gently",
+        "noMention": "wants a pat",
+        "victimString": "was patted {v_num} times",
+        "perpString": "patted others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "peck": {
+        "description": "Peck someone",
+        "mention": "pecks {mentions}",
+        "noMention": "pecks blindly",
+        "victimString": "was pecked {v_num} times",
+        "perpString": "pecked others {p_num} times"
+    },
+    "poke": {
+        "description": "Poke someone",
+        "mention": "pokes {mentions}",
+        "noMention": "wants to be poked",
+        "victimString": "was poked {v_num} times",
+        "perpString": "poked others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "ponk": {
+        "description": "Ponk someone",
+        "mention": "ponks {mentions}",
+        "noMention": "wants to be ponked",
+        "victimString": "was ponked {v_num} times",
+        "perpString": "ponked others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "pout": {
+        "description": "Pout to your heart's content",
+        "mention": "pouts at {mentions}",
+        "noMention": "pouts",
+        "victimString": "was pouted at {v_num} times",
+        "perpString": "pouted {p_num} times"
+    },
+    "push": {
+        "description": "Push someone",
+        "mention": "pushes {mentions}",
+        "noMention": "wants to be pushed",
+        "victimString": "was pushed {v_num} times",
+        "perpString": "pushed others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "respect": {
+        "description": "Respect someone",
+        "mention": "respects {mentions}",
+        "noMention": "wants respect",
+        "victimString": "was respected {v_num} times",
+        "perpString": "respected others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "run": {
+        "description": "Run, Forrest. Run",
+        "mention": "runs away from {mentions}",
+        "noMention": "is running",
+        "victimString": "got run away from {v_num} times",
+        "perpString": "ran {p_num} times"
+    },
+    "sad": {
+        "description": "Express your sadness",
+        "mention": "{mentions} made {author} sad",
+        "noMention": "is sad",
+        "victimString": "made someone sad {v_num} times",
+        "perpString": "was sad {p_num} times"
+    },
+    "salute": {
+        "description": "Salute someone",
+        "mention": "salutes {mentions}",
+        "noMention": "wants to be saluted",
+        "victimString": "got saluted {v_num} times",
+        "perpString": "saluted others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "sass": {
+        "description": "Show off some sass",
+        "mention": "sasses {mentions}",
+        "noMention": "is real sassy",
+        "victimString": "got sassed {v_num} times",
+        "perpString": "sassed others {p_num} times"
+    },
+    "save": {
+        "description": "Save someone",
+        "mention": "saves {mentions}",
+        "noMention": "wants to be saved",
+        "victimString": "got saved {v_num} times",
+        "perpString": "saved others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "scared": {
+        "description": "Let people know you're scared",
+        "mention": "is scared of {mentions}",
+        "noMention": "is scared",
+        "victimString": "scared people {v_num} times",
+        "perpString": "got scared {p_num} times"
+    },
+    "shake": {
+        "description": "Shake someone",
+        "mention": "shakes {mentions}",
+        "noMention": "wants someone to shake them",
+        "victimString": "got shaked {v_num} times",
+        "perpString": "shaked others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "shakehand": {
+        "description": "Shake someone's hand",
+        "mention": "shakes {mentions} hand",
+        "noMention": "wants someone to shake their hand",
+        "victimString": "got {v_num} handshakes",
+        "perpString": "handshaked others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "shook": {
+        "description": "Show you were completely shook",
+        "mention": "is shook by {mentions}",
+        "noMention": "is shook",
+        "victimString": "shook others {v_num} times",
+        "perpString": "got shook {p_num} times"
+    },
+    "shrug": {
+        "description": "Shrug at someone",
+        "mention": "shrugs at {mentions}",
+        "noMention": "shrugs",
+        "victimString": "got shrugged at {v_num} times",
+        "perpString": "shrugged at others {p_num} times"
+    },
+    "shy": {
+        "description": "Show you're shy",
+        "mention": "feels shy towards {mentions}",
+        "noMention": "is shy",
+        "victimString": "made other shy {v_num} times",
+        "perpString": "was shy {p_num} times"
+    },
+    "simp": {
+        "description": "Ask someone to simp for you",
+        "mention": "Wants {mentions} to be their simp",
+        "noMention": "needs a simp",
+        "victimString": "was asked to simp {v_num} times",
+        "perpString": "asked others to simp {p_num} times"
+    },
+    "simping": {
+        "description": "Simp at someone",
+        "mention": "is simping at {mentions}",
+        "noMention": "is a simp",
+        "victimString": "was simped at {v_num} times",
+        "perpString": "simped at others {p_num} times"
+    },
+    "sip": {
+        "description": "Take a sip of your drink",
+        "mention": "takes a sip from their drink, looking at {mentions}",
+        "noMention": "takes a sip from their drink",
+        "victimString": "got the 'sip look' {v_num} times",
+        "perpString": "sipped {p_num} times from their drink"
+    },
+    "slap": {
+        "description": "Slap someone",
+        "mention": "slaps {mentions}",
+        "noMention": "needs someone to slap",
+        "victimString": "got slapped {v_num} times",
+        "perpString": "slapped others {p_num} times"
+    },
+    "sleep": {
+        "description": "Slap someone",
+        "mention": "tells {mentions} to go to sleep",
+        "noMention": "is feeling sleepy",
+        "victimString": "got told to sleep {v_num} times",
+        "perpString": "told others to sleep {p_num} times"
+    },
+    "smart": {
+        "description": "Let someone know they're smart",
+        "mention": "tells {mentions} they're smart",
+        "noMention": "is feeling smart",
+        "victimString": "got called smart {v_num} times",
+        "perpString": "called others smart {p_num} times"
+    },
+    "smile": {
+        "description": "Smile at someone",
+        "mention": "smiles at {mentions}",
+        "noMention": "smiles",
+        "victimString": "got smiled at {v_num} times",
+        "perpString": "smiled at others {p_num} times"
+    },
+    "squish": {
+        "description": "Squish someone",
+        "mention": "squishes {mentions}",
+        "noMention": "squishes",
+        "victimString": "got squished {v_num} times",
+        "perpString": "squished others {p_num} times"
+    },
+    "stab": {
+        "description": "Stab someone",
+        "mention": "stabs {mentions}",
+        "noMention": "wants to be stabbed",
+        "victimString": "got stabbed {v_num} times",
+        "perpString": "stabbed others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "stare": {
+        "description": "Stare at someone",
+        "mention": "stares at {mentions}",
+        "noMention": "stares blankly into nothing",
+        "victimString": "got stared at {v_num} times",
+        "perpString": "stared at others {p_num} times"
+    },
+    "steal": {
+        "description": "Steal someone",
+        "mention": "steals from {mentions}",
+        "noMention": "wants to steal something",
+        "victimString": "got stolen from {v_num} times",
+        "perpString": "stole from others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "stop": {
+        "description": "Stop someone",
+        "mention": "stops {mentions}",
+        "noMention": "wants to be stopped",
+        "victimString": "got stopped {v_num} times",
+        "perpString": "stopped others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "thumbsup": {
+        "description": "Show someone thumbs up",
+        "mention": "gives {mentions} thumbs up",
+        "noMention": "wants thumbs up",
+        "victimString": "got thumbs up {v_num} times",
+        "perpString": "gave thumbs up {p_num} times",
+        "ignoreNoMention": true
+    },
+    "tickle": {
+        "description": "Tickle someone",
+        "mention": "tickles {mentions}",
+        "noMention": "wants to be tickled",
+        "victimString": "got tickled {v_num} times",
+        "perpString": "tickled others {p_num} times",
+        "ignoreNoMention": true
+    },
+    "tired": {
+        "description": "Let people know you're tired",
+        "mention": "is tired with {mentions}",
+        "noMention": "is tired",
+        "victimString": "made others tired {v_num} times",
+        "perpString": "got tired {p_num} times"
+    },
+    "vibe": {
+        "description": "Let people know you're vibing",
+        "mention": "is vibing with {mentions}",
+        "noMention": "is vibing",
+        "victimString": "was vibed with {v_num} times",
+        "perpString": "vibed {p_num} times"
+    },
+    "wag": {
+        "description": "Wag your behind",
+        "mention": "wags their behind at {mentions}",
+        "noMention": "wags their behind",
+        "victimString": "was wagged at {v_num} times",
+        "perpString": "wagged {p_num} times"
+    },
+    "wave": {
+        "description": "Wave at someone",
+        "mention": "waves at {mentions}",
+        "noMention": "waves",
+        "victimString": "was waved at {v_num} times",
+        "perpString": "waved {p_num} times"
+    },
+    "wink": {
+        "description": "Wink at someone",
+        "mention": "winks at {mentions}",
+        "noMention": "winks",
+        "victimString": "was winked at {v_num} times",
+        "perpString": "winked {p_num} times"
+    },
+    "yes": {
+        "description": "Say yes",
+        "mention": "says yes to {mentions}",
+        "noMention": "says yes",
+        "victimString": "was told yes {v_num} times",
+        "perpString": "said yes {p_num} times"
+    },
+    "yup": {
+        "description": "Say yup",
+        "mention": "says yup to {mentions}",
+        "noMention": "says yup",
+        "victimString": "was told yup {v_num} times",
+        "perpString": "said yup {p_num} times"
+    }
+}

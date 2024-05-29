@@ -6,6 +6,7 @@ const { token } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
 const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, getWelcomeChannel, getWelcomeMessage, createUserProfilesTable } = require('./database/database');
+const { createWikiPageTable } = require('./database/wiki');
 
 const client = new Client({
   intents: [
@@ -44,6 +45,7 @@ client.once('ready', () => {
   commandHandler.loadCommands(commandsPath);
   setupDatabase();
   createUserProfilesTable();
+  createWikiPageTable();
 
   const { commandCount, aliasCount } = commandHandler.getCommandStats();
   console.log(`${client.user.tag} (${client.user.id}) is ready with ${commandCount} commands and ${aliasCount} aliases, serving ${client.guilds.cache.size} servers and ${client.users.cache.size} users!`);
