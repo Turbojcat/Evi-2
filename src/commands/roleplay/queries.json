@@ -192,5 +192,5 @@
     "update_yes_p": "UPDATE profil SET yes_p=yes_p+1 WHERE user_id=?",
     "update_yes_v": "UPDATE profil SET yes_v=yes_v+1 WHERE user_id=?",
     "update_yup_p": "UPDATE profil SET yup_p=yup_p+1 WHERE user_id=?",
-    "update_yup_v": "UPDATE profil SET yup_v=yup_v+1 WHERE user_id=?",
+    "update_yup_v": "UPDATE profil SET yup_v=yup_v+1 WHERE user_id=?"
 }

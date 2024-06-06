@@ -103,7 +103,7 @@ class RPCommand {
         const vQueryName = `update_${this.name}_v`
 
         // Parsing file and writing queries
-        await fs.readFile("json/queries.json", "utf-8", async(err, data) => {
+        await fs.readFile("./queries.json", "utf-8", async(err, data) => {
             try {
                 if(err) throw err
 
@@ -115,7 +115,7 @@ class RPCommand {
                 queryData[pQueryName] = pQuery
                 queryData[vQueryName] = vQuery
 
-                await fs.writeFile("json/queries.json", JSON.stringify(queryData, Object.keys(queryData).sort(), 4), "utf-8", function(err) {
+                await fs.writeFile("./queries.json", JSON.stringify(queryData, Object.keys(queryData).sort(), 4), "utf-8", function(err) {
                     if (err) throw err
                     bot.queries[pQueryName] = pQuery
                     bot.queries[vQueryName] = vQuery
@@ -126,7 +126,7 @@ class RPCommand {
         })
 
         // Parsing command file and writing new command to file
-        await fs.readFile("json/rp.json", "utf-8", async(err, data) => {
+        await fs.readFile("./rp.json", "utf-8", async(err, data) => {
             try {
                 if (err) throw err
 
@@ -137,7 +137,7 @@ class RPCommand {
                 }
                 cmdData[name] = commandData
 
-                await fs.writeFile("json/rp.json", JSON.stringify(cmdData, null, 4), "utf-8", function(err) {
+                await fs.writeFile("./rp.json", JSON.stringify(cmdData, null, 4), "utf-8", function(err) {
                     if (err) throw err
                 })
 
@@ -256,7 +256,7 @@ class RPCommand {
 }
 
 module.exports.init = async(bot, category) => {
-    const commands = JSON.parse(fs.readFileSync("json/rp.json","utf8"))
+    const commands = JSON.parse(fs.readFileSync("./rp.json","utf8"))
     let numRPCommands = 0
     // Reads all keys in the rp.json file and sets up the commands listed 
     for(let key in commands) {
