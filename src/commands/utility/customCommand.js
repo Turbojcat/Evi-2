@@ -1,3 +1,4 @@
+/*
 // src/commands/utility/customCommand.js
 const { EmbedBuilder } = require('discord.js');
 const { addCustomCommand, removeCustomCommand, executeCustomCommand, getCustomCommandCount, getCustomCommandLimit, getCustomCommands } = require('../../database/database');
@@ -226,3 +227,4 @@ module.exports = {
     }
   },
 };
+*/
