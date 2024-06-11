@@ -1,9 +1,9 @@
 // src/commands/utils/help.js
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
 const { prefix, developerIDs } = require('../../config');
 const { hasPremiumSubscription, getRolePermissionLevel } = require('../../database/database');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = {
   name: 'help',
@@ -45,109 +45,85 @@ async function executePrefix(message, args, client, commands, slashCommands) {
   }
 
   if (commandName) {
-    const command = commands.get(commandName.toLowerCase()) || commands.find((cmd) => cmd.aliases && cmd.aliases.includes(commandName.toLowerCase()));
+    const command = commands[commandName.toLowerCase()];
     if (!command) {
       return message.channel.send(`No information found for command: \`${commandName}\``);
     }
 
     const embed = new EmbedBuilder()
-  .setColor('#0099ff')
-  .setTitle(`Command: ${command.name}`)
-  .setDescription(`${command.description}\n\nAliases: ${command.aliases ? command.aliases.join(', ') : 'None'}\n\nUsage: \`${prefix}${command.name} ${command.usage || ''}\`\n\n• \`<>\` indicates a required argument\n• \`[]\` indicates an optional argument\n• \`()\` indicates a choice between arguments`)
-  .addFields(
-    { name: 'Cooldown', value: `${command.cooldown || 0} second(s)`, inline: true },
-    { name: 'Premium', value: command.premium ? 'Premium' : (command.premiumPerks ? 'Free / Premium' : 'Free'), inline: true },
-    { name: 'Permission Level', value: command.permissionLevel ? command.permissionLevel.join(', ') : 'normal', inline: true },
-    { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
-    { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
-  )
-  .setTimestamp();
-
-
-    return message.channel.send({ embeds: [embed] });
-  } else {
-    const commandCount = commands.size;
-    const aliasCount = commands.reduce((acc, cmd) => acc + (cmd.aliases ? cmd.aliases.length : 0), 0);
-
-    const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle('Command List')
-      .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}`)
+      .setTitle(`Command: ${command.name}`)
+      .setDescription(`${command.description}\n\nUsage: \`${prefix}${command.name} ${command.usage || ''}\``)
       .addFields(
-        {
-          name: 'Command Types',
-          value: 'Free - Commands available for free users\nPremium - Commands available for premium users\nFree / Premium - Commands with limited functionality for free users and additional features for premium users',
-        }
+        { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
+        { name: 'Premium', value: command.premium ? 'Premium' : (command.premiumPerks ? 'Free / Premium' : 'Free'), inline: true },
+        { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
       )
       .setTimestamp();
 
+    return message.channel.send({ embeds: [embed] });
+  } else {
+    const categories = {};
+
     const commandsPath = path.join(__dirname, '..');
-    const commandFolders = fs.readdirSync(commandsPath);
-    const pages = [];
-    let currentPage = 0;
+    const commandFolders = fs.readdirSync(commandsPath, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
 
     for (const folder of commandFolders) {
-      if (folder === 'developer' && !developerIDs.includes(message.author.id)) {
-        continue;
-      }
-
-      const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter((file) => file.endsWith('.js'));
-      const commandFields = [];
+      const folderPath = path.join(commandsPath, folder);
+      const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
 
       for (const file of commandFiles) {
-        const commandName = file.slice(0, -3);
-        const command = commands.get(commandName);
-        if (!command) {
-          continue;
-        }
-        const isPremium = command.premium;
-        const hasPremiumPerks = command.premiumPerks;
-        const hasPermission = command.permissionLevel ? command.permissionLevel.includes(userPermissionLevel) : true;
-        command.category = folder;
-        if (hasPermission) {
-          commandFields.push({ name: `\`${commandName}\` ${isPremium ? "(Premium)" : (hasPremiumPerks ? "(Free / Premium)" : "(Free)")}`, value: `${command.description}\n\nUsage: \`${prefix}${command.name} ${command.usage || ''}\``, inline: true });
-        }
-      }
+        const command = require(path.join(folderPath, file));
+        const category = folder;
 
-      if (commandFields.length > 0) {
-        if (embed.data && embed.data.fields && (embed.data.fields.length + commandFields.length > 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + commandFields.length > 25))) {
-          pages.push(embed);
-          embed = new EmbedBuilder()
-            .setColor('#0099ff')
-            .setTitle('Command List')
-            .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}`)
-            .addFields(
-              {
-                name: 'Command Types',
-                value: 'Free - Commands available for free users\nPremium - Commands available for premium users\nFree / Premium - Commands with limited functionality for free users and additional features for premium users',
-              }
-            )
-            .setTimestamp();
+        if (!categories[category]) {
+          categories[category] = [];
         }
-
-        embed.addFields({ name: `${folder.toUpperCase()} Commands`, value: '\u200B' });
-        embed.addFields(...commandFields);
+        categories[category].push(command);
       }
     }
 
-    embed.addFields({ name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' });
-    pages.push(embed);
+    const pages = [];
 
-    const row = new ActionRowBuilder()
-      .addComponents(
+    for (const [category, commands] of Object.entries(categories)) {
+      const commandList = commands.map(command => `\`${command.name}\``).join(', ');
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`${category.toUpperCase()} Commands`)
+        .setDescription(commandList)
+        .setTimestamp();
+      pages.push(embed);
+    }
+
+    if (pages.length === 0) {
+      return message.channel.send('No commands found.');
+    }
+
+    let currentPage = 0;
+    const row = new ActionRowBuilder();
+
+    if (pages.length > 1) {
+      row.addComponents(
         new ButtonBuilder()
           .setCustomId('previous')
           .setLabel('Previous')
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(currentPage === 0),
+          .setDisabled(true),
         new ButtonBuilder()
           .setCustomId('next')
           .setLabel('Next')
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(currentPage === pages.length - 1)
+          .setDisabled(false)
       );
+    }
 
-    const helpMessage = await message.channel.send({ embeds: [pages[currentPage]], components: [row] });
+    const helpMessage = await message.channel.send({ embeds: [pages[currentPage]], components: pages.length > 1 ? [row] : [] });
+
+    if (pages.length === 1) {
+      return;
+    }
 
     const collector = helpMessage.createMessageComponentCollector({ componentType: 2, time: 60000 });
 
@@ -193,116 +169,89 @@ async function executeSlash(interaction, client, commands, slashCommands) {
       .setTitle(`Command: ${command.data.name}`)
       .setDescription(command.data.description)
       .addFields(
-        { name: 'Cooldown', value: `${command.cooldown || 0} second(s)`, inline: true },
-        { name: 'Premium', value: command.premium ? 'Premium' : (command.premiumPerks ? 'Free / Premium' : 'Free'), inline: true },
-        { name: 'Permission Level', value: command.permissionLevel ? command.permissionLevel.join(', ') : 'normal', inline: true },
         { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
+        { name: 'Premium', value: command.premium ? 'Premium' : (command.premiumPerks ? 'Free / Premium' : 'Free'), inline: true },
         { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
       )
       .setTimestamp();
 
     return interaction.reply({ embeds: [embed] });
   } else {
-    const commandCount = slashCommands.size;
-    const aliasCount = slashCommands.reduce((acc, cmd) => acc + (cmd.aliases ? cmd.aliases.length : 0), 0);
-
-    const embed = new EmbedBuilder()
-      .setColor('#0099ff')
-      .setTitle('Command List')
-      .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}`)
-      .addFields(
-        {
-          name: 'Command Types',
-          value: 'Free - Commands available for free users\nPremium - Commands available for premium users\nFree / Premium - Commands with limited functionality for free users and additional features for premium users',
-        }
-      )
-      .setTimestamp();
+    const categories = {};
 
     const commandsPath = path.join(__dirname, '..');
-    const commandFolders = fs.readdirSync(commandsPath);
-    const pages = [];
-    let currentPage = 0;
+    const commandFolders = fs.readdirSync(commandsPath, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
 
     for (const folder of commandFolders) {
-      if (folder === 'developer' && !developerIDs.includes(interaction.user.id)) {
-        continue;
-      }
-
-      const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter((file) => file.endsWith('.js'));
-      const commandFields = [];
+      const folderPath = path.join(commandsPath, folder);
+      const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
 
       for (const file of commandFiles) {
-        const commandName = file.slice(0, -3);
-        const command = slashCommands.get(commandName);
-        if (!command) {
-          continue;
-        }
-        const isPremium = command.premium;
-        const hasPremiumPerks = command.premiumPerks;
-        const hasPermission = command.permissionLevel ? command.permissionLevel.includes(userPermissionLevel) : true;
-        command.category = folder;
-        if (hasPermission) {
-          commandFields.push({
-            name: `\`${commandName}\` ${isPremium ? "(Premium)" : (hasPremiumPerks ? "(Free / Premium)" : "(Free)")}`,
-            value: `${command.data.description}\n\nUsage: \`/${command.data.name}${command.data.options ? ' ' + command.data.options.map((option) => `[${option.name}]`).join(' ') : ''}\``,
-            inline: true
-          });
-                  }
-      }
+        const command = require(path.join(folderPath, file));
+        const category = folder;
 
-      if (commandFields.length > 0) {
-        if (embed.data && embed.data.fields && (embed.data.fields.length + commandFields.length > 25 || (folder === commandFolders[commandFolders.length - 1] && embed.data.fields.length + commandFields.length > 25))) {
-          pages.push(embed);
-          embed = new EmbedBuilder()
-            .setColor('#0099ff')
-            .setTitle('Command List')
-            .setDescription(`Here's a list of all available commands:\n\nTotal commands: ${commandCount}\nTotal aliases: ${aliasCount}`)
-            .addFields(
-              {
-                name: 'Command Types',
-                value: 'Free - Commands available for free users\nPremium - Commands available for premium users\nFree / Premium - Commands with limited functionality for free users and additional features for premium users',
-              }
-            )
-            .setTimestamp();
+        if (!categories[category]) {
+          categories[category] = [];
         }
-
-        embed.addFields({ name: `${folder.toUpperCase()} Commands`, value: '\u200B' });
-        embed.addFields(...commandFields);
+        categories[category].push(command);
       }
     }
 
-    embed.addFields({ name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' });
-    pages.push(embed);
+    const pages = [];
 
-    const row = new ActionRowBuilder()
-      .addComponents(
+    for (const [category, commands] of Object.entries(categories)) {
+      const commandList = commands.map(command => `\`${command.data.name}\``).join(', ');
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`${category.toUpperCase()} Commands`)
+        .setDescription(commandList)
+        .setTimestamp();
+      pages.push(embed);
+    }
+
+    if (pages.length === 0) {
+      return interaction.reply({ content: 'No commands found.', ephemeral: true });
+    }
+
+    let currentPage = 0;
+    const row = new ActionRowBuilder();
+
+    if (pages.length > 1) {
+      row.addComponents(
         new ButtonBuilder()
           .setCustomId('previous')
           .setLabel('Previous')
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(currentPage === 0),
+          .setDisabled(true),
         new ButtonBuilder()
           .setCustomId('next')
           .setLabel('Next')
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(currentPage === pages.length - 1)
+          .setDisabled(false)
       );
+    }
 
-    const helpMessage = await interaction.reply({ embeds: [pages[currentPage]], components: [row], fetchReply: true });
+    const helpMessage = await interaction.reply({ embeds: [pages[currentPage]], components: pages.length > 1 ? [row] : [], fetchReply: true });
+
+    if (pages.length === 1) {
+      return;
+    }
 
     const collector = helpMessage.createMessageComponentCollector({ componentType: 2, time: 60000 });
 
-    collector.on('collect', async (interaction) => {
-      if (interaction.customId === 'previous') {
+    collector.on('collect', async (buttonInteraction) => {
+      if (buttonInteraction.customId === 'previous') {
         currentPage--;
-      } else if (interaction.customId === 'next') {
+      } else if (buttonInteraction.customId === 'next') {
         currentPage++;
       }
 
       row.components[0].setDisabled(currentPage === 0);
       row.components[1].setDisabled(currentPage === pages.length - 1);
 
-      await interaction.update({ embeds: [pages[currentPage]], components: [row] });
+      await buttonInteraction.update({ embeds: [pages[currentPage]], components: [row] });
     });
 
     collector.on('end', async () => {

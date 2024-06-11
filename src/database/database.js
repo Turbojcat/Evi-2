@@ -34,7 +34,6 @@ const setupDatabase = () => {
         console.error('Error during premium_subscriptions table creation:', err);
         return;
       }
-      console.log('Premium subscriptions table created or already exists');
     }
   );
 
@@ -51,7 +50,6 @@ const setupDatabase = () => {
         console.error('Error during role_permissions table creation:', err);
         return;
       }
-      console.log('Role permissions table created or already exists');
     }
   );
 
@@ -68,7 +66,6 @@ const setupDatabase = () => {
         console.error('Error during guild_settings table creation:', err);
         return;
       }
-      console.log('Guild settings table created or already exists');
     }
   );
 
@@ -85,7 +82,6 @@ const setupDatabase = () => {
         console.error('Error during economy table creation:', err);
         return;
       }
-      console.log('Economy table created or already exists');
     }
   );
 
@@ -102,14 +98,11 @@ const setupDatabase = () => {
         console.error('Error during custom_commands table creation:', err);
         return;
       }
-      console.log('Custom commands table created or already exists');
     }
   );
 
   createUserProfilesTable();
 };
-
-
 
 const getRolePermissionLevel = (guildId, roleId) => {
   return new Promise((resolve, reject) => {
@@ -243,7 +236,6 @@ const addOwnerRole = (guildId, ownerId) => {
   });
 };
 
-
 const hasPremiumSubscription = (userId) => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT * FROM premium_subscriptions WHERE userId = ? AND endDate > CURRENT_TIMESTAMP';
@@ -284,7 +276,7 @@ const removePremiumSubscription = (userId) => {
       }
     });
   });
-}
+};
 
 const setStoryChannel = (guildId, channelId) => {
   return new Promise((resolve, reject) => {
@@ -579,110 +571,6 @@ const removeSuggestionBlacklist = (userId) => {
   });
 };
 
-const setWelcomeChannel = (guildId, channelId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'INSERT INTO guild_settings (guild_id, setting_name, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
-      [guildId, 'welcome_channel', channelId],
-      (err) => {
-        if (err) {
-          console.error('Error setting welcome channel:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const getWelcomeChannel = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT setting_value FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
-      [guildId, 'welcome_channel'],
-      (err, results) => {
-        if (err) {
-          console.error('Error getting welcome channel:', err);
-          reject(err);
-        } else {
-          const welcomeChannel = results.length > 0 ? results[0].setting_value : null;
-          resolve(welcomeChannel);
-        }
-      }
-    );
-  });
-};
-
-const removeWelcomeChannel = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'DELETE FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
-      [guildId, 'welcome_channel'],
-      (err) => {
-        if (err) {
-          console.error('Error removing welcome channel:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const setWelcomeMessage = (guildId, message) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'INSERT INTO guild_settings (guild_id, setting_name, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
-      [guildId, 'welcome_message', message],
-      (err) => {
-        if (err) {
-          console.error('Error setting welcome message:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const getWelcomeMessage = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT setting_value FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
-      [guildId, 'welcome_message'],
-      (err, results) => {
-        if (err) {
-          console.error('Error getting welcome message:', err);
-          reject(err);
-        } else {
-          const welcomeMessage = results.length > 0 ? results[0].setting_value : null;
-          resolve(welcomeMessage);
-        }
-      }
-    );
-  });
-};
-
-const removeWelcomeMessage = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'DELETE FROM guild_settings WHERE guild_id = ? AND setting_name = ?',
-      [guildId, 'welcome_message'],
-      (err) => {
-        if (err) {
-          console.error('Error removing welcome message:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
 const createUserProfilesTable = () => {
   const sql = `
     CREATE TABLE IF NOT EXISTS user_profiles (
@@ -703,7 +591,6 @@ const createUserProfilesTable = () => {
     if (error) {
       console.error('Error creating user_profiles table:', error);
     } else {
-      console.log('user_profiles table created successfully');
     }
   });
 };
@@ -739,11 +626,5 @@ module.exports = {
   isSuggestionBlacklisted,
   addSuggestionBlacklist,
   removeSuggestionBlacklist,
-  setWelcomeChannel,
-  getWelcomeChannel,
-  removeWelcomeChannel,
-  setWelcomeMessage,
-  getWelcomeMessage,
-  removeWelcomeMessage,
   createUserProfilesTable,
 };

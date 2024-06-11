@@ -5,10 +5,11 @@ const { Collection } = require('discord.js');
 const { prefix } = require('../config');
 const { hasPremiumSubscription, getRolePermissionLevel, executeCustomCommand } = require('../database/database');
 
+
 class CommandHandler {
   constructor(client) {
     this.client = client;
-    this.commands = new Collection();
+    this.commands = {};
     this.slashCommands = new Collection();
     this.cooldowns = new Collection();
   }
@@ -16,18 +17,17 @@ class CommandHandler {
   loadCommands(commandsPath) {
     const commandFiles = this.getCommandFiles(commandsPath);
 
+
     for (const filePath of commandFiles) {
       const command = require(filePath);
-      console.log(`Loading command from file: ${filePath}`);
       if (command.data) {
         this.slashCommands.set(command.data.name, command);
-        console.log(`Slash command ${command.data.name} loaded`);
       }
       if (command.name) {
-        this.commands.set(command.name, command);
-        console.log(`Command ${command.name} loaded`);
+        this.commands[command.name] = command;
       }
     }
+
   }
 
   getCommandFiles(directory) {
@@ -36,7 +36,6 @@ class CommandHandler {
 
     for (const file of files) {
       const filePath = path.join(directory, file.name);
-      console.log(`Processing file: ${filePath}`);
 
       if (file.isDirectory()) {
         commandFiles = [...commandFiles, ...this.getCommandFiles(filePath)];
@@ -54,20 +53,18 @@ class CommandHandler {
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
 
-    console.log(`Attempting to find command: ${commandName}`);
-    const command = this.commands.get(commandName) || this.commands.find((cmd) => cmd.aliases && cmd.aliases.includes(commandName));
+
+    const command = this.commands[commandName] || Object.values(this.commands).find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
     if (!command) {
       const customResponse = await executeCustomCommand(message.guild.id, commandName);
       if (customResponse) {
         return message.channel.send(customResponse);
       } else {
-        console.log(`No command or custom command found for: ${commandName}`);
         return;
       }
     }
 
-    console.log(`Found command: ${command.name}`);
 
     const isPremiumUser = await hasPremiumSubscription(message.author.id);
 
@@ -78,7 +75,6 @@ class CommandHandler {
     const isServerOwner = message.guild.ownerId === message.author.id;
 
     if (isServerOwner) {
-      // Servereieren har alltid tillatelse til å bruke kommandoer
       this.executeCommand(message, args, command);
     } else {
       try {
@@ -89,7 +85,7 @@ class CommandHandler {
           return message.channel.send('You do not have permission to use this command.');
         }
       } catch (error) {
-        console.error('Error getting user permission level:', error);
+        console.error('Error checking user permission level:', error);
         return message.channel.send('An error occurred while checking your permissions.');
       }
     }
@@ -101,11 +97,9 @@ class CommandHandler {
     const command = this.slashCommands.get(interaction.commandName);
 
     if (!command) {
-      console.log(`No slash command found for: ${interaction.commandName}`);
       return;
     }
 
-    console.log(`Found slash command: ${command.data.name}`);
 
     const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
 
@@ -116,7 +110,6 @@ class CommandHandler {
     const isServerOwner = interaction.guild.ownerId === interaction.user.id;
 
     if (isServerOwner) {
-      // Servereieren har alltid tillatelse til å bruke kommandoer
       this.executeSlashCommand(interaction, command);
     } else {
       try {
@@ -127,7 +120,7 @@ class CommandHandler {
           return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
         }
       } catch (error) {
-        console.error('Error getting user permission level:', error);
+        console.error('Error checking user permission level:', error);
         return interaction.reply({ content: 'An error occurred while checking your permissions.', ephemeral: true });
       }
     }
@@ -157,7 +150,7 @@ class CommandHandler {
     try {
       command.execute(message, args, this.client, this.commands, this.slashCommands);
     } catch (error) {
-      console.error(`Error executing command ${command.name}:`, error);
+      console.error('Error executing command:', error);
       message.channel.send('There was an error trying to execute that command!');
     }
   }
@@ -176,7 +169,6 @@ class CommandHandler {
 
       if (now < expirationTime) {
         const timeLeft = (expirationTime - now) / 1000;
-        console.log(`Slash command ${command.data.name} is on cooldown for ${timeLeft.toFixed(1)} more second(s)`);
         return interaction.reply({ content: `Please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.data.name}\` command.`, ephemeral: true });
       }
     }
@@ -187,16 +179,17 @@ class CommandHandler {
     try {
       await command.executeSlash(interaction, this.client, this.commands, this.slashCommands);
     } catch (error) {
-      console.error(`Error executing slash command ${command.data.name}:`, error);
+      console.error('Error executing slash command:', error);
       await interaction.reply({ content: 'There was an error trying to execute that command!', ephemeral: true });
     }
   }
 
   getCommandStats() {
-    const commandCount = this.commands.size;
-    const aliasCount = this.commands.reduce((acc, cmd) => acc + (cmd.aliases ? cmd.aliases.length : 0), 0);
+    const commandCount = Object.keys(this.commands).length;
+    const aliasCount = Object.values(this.commands).reduce((acc, cmd) => acc + (cmd.aliases ? cmd.aliases.length : 0), 0);
     return { commandCount, aliasCount };
   }
 }
 
 module.exports = CommandHandler;
+module.exports.commands = (commandHandler) => commandHandler.commands;

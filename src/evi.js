@@ -5,8 +5,10 @@ const { Routes } = require('discord.js');
 const { token } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
-const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, getWelcomeChannel, getWelcomeMessage, createUserProfilesTable } = require('./database/database');
+const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, createUserProfilesTable } = require('./database/database');
 const { createWikiPageTable } = require('./database/wiki');
+const { createWelcomeLeaveTable, getWelcomeMessage, getLeaveMessage } = require('./database/welcomeLeave');
+const { replacePlaceholders } = require('./placeholders');
 
 const client = new Client({
   intents: [
@@ -19,6 +21,8 @@ const client = new Client({
 });
 
 const commandHandler = new CommandHandler(client);
+const { commands } = commandHandler;
+module.exports.commands = commands;
 
 const activities = [
   { type: ActivityType.Playing, name: '!Help for commands!' },
@@ -46,6 +50,7 @@ client.once('ready', () => {
   setupDatabase();
   createUserProfilesTable();
   createWikiPageTable();
+  createWelcomeLeaveTable();
 
   const { commandCount, aliasCount } = commandHandler.getCommandStats();
   console.log(`${client.user.tag} (${client.user.id}) is ready with ${commandCount} commands and ${aliasCount} aliases, serving ${client.guilds.cache.size} servers and ${client.users.cache.size} users!`);
@@ -54,19 +59,9 @@ client.once('ready', () => {
 
   (async () => {
     try {
-      console.log('Started refreshing application (/) commands.');
-
-      for (const command of commandHandler.slashCommands.values()) {
-        try {
-          await rest.post(Routes.applicationCommands(client.user.id), {
-            body: command.data,
-          });
-          console.log(`Successfully registered slash command: ${command.data.name}`);
-        } catch (error) {
-          console.error(`Error registering slash command: ${command.data.name}`);
-          console.error(error);
-        }
-      }
+      await rest.put(Routes.applicationCommands(client.user.id), {
+        body: [...commandHandler.slashCommands.values()].map(command => command.data),
+      });
 
       console.log('Finished refreshing application (/) commands.');
     } catch (error) {
@@ -85,16 +80,40 @@ client.on('interactionCreate', async (interaction) => {
   commandHandler.handleSlashCommand(interaction);
 });
 
+client.on('guildMemberAdd', async (member) => {
+  const guildId = member.guild.id;
+  const welcomeMessage = await getWelcomeMessage(guildId);
+
+  if (welcomeMessage) {
+    const replacedMessage = replacePlaceholders(member, welcomeMessage);
+    const welcomeChannel = member.guild.channels.cache.find(channel => channel.name === 'welcome');
+    if (welcomeChannel) {
+      welcomeChannel.send(replacedMessage);
+    }
+  }
+});
+
+client.on('guildMemberRemove', async (member) => {
+  const guildId = member.guild.id;
+  const leaveMessage = await getLeaveMessage(guildId);
+
+  if (leaveMessage) {
+    const replacedMessage = replacePlaceholders(member, leaveMessage);
+    const leaveChannel = member.guild.channels.cache.find(channel => channel.name === 'leave');
+    if (leaveChannel) {
+      leaveChannel.send(replacedMessage);
+    }
+  }
+});
+
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
   const oldPremiumStatus = await hasPremiumSubscription(oldMember.id);
   const newPremiumStatus = await hasPremiumSubscription(newMember.id);
 
   if (!oldPremiumStatus && newPremiumStatus) {
-    console.log(`User ${newMember.user.tag} (${newMember.id}) gained premium subscription`);
     // Perform actions for premium subscription activation
     // ...
   } else if (oldPremiumStatus && !newPremiumStatus) {
-    console.log(`User ${newMember.user.tag} (${newMember.id}) lost premium subscription`);
     // Perform actions for premium subscription deactivation
     // ...
   }
@@ -105,25 +124,8 @@ client.on('guildCreate', async (guild) => {
   const ownerMember = await guild.members.fetch(ownerId);
 
   if (ownerMember) {
-    addOwnerRole(guild.id, ownerId, () => {
-      console.log(`Added owner role for user ${ownerMember.user.tag} (${ownerId}) in guild ${guild.name} (${guild.id})`);
-    });
+    addOwnerRole(guild.id, ownerId);
   }
 });
 
-client.on('guildMemberAdd', async (member) => {
-  const welcomeChannelId = await getWelcomeChannel(member.guild.id);
-  const welcomeMessage = await getWelcomeMessage(member.guild.id);
-
-  if (welcomeChannelId && welcomeMessage) {
-    const welcomeChannel = member.guild.channels.cache.get(welcomeChannelId);
-    if (welcomeChannel) {
-      const formattedMessage = welcomeMessage
-        .replace('{user}', member.user.toString())
-        .replace('{server}', member.guild.name);
-      welcomeChannel.send(formattedMessage);
-    }
-  }
-});
-
-client.login(token)
+client.login(token);

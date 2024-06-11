@@ -19,7 +19,6 @@ const createWikiPageTable = () => {
     if (error) {
       console.error('Error creating wiki_pages table:', error);
     } else {
-      console.log('wiki_pages table created successfully');
     }
   });
 };

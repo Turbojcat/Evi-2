@@ -1,9 +1,10 @@
 // src/commands/utils/wikisetup.js
-const { createWikiPage, removeWikiPage } = require('../../database/wiki');
+const { createWikiPage, removeWikiPage, getWikiPages } = require('../../database/wiki');
+const { hasPremiumSubscription } = require('../../database/database');
 
 module.exports = {
   name: 'wikisetup',
-  description: 'Creates or removes a wiki page',
+  description: 'Creates or removes a wiki page. Free: 5 pages, Premium: 20 pages.',
   usage: '<add|remove> <page> [text]',
   aliases: ['ws'],
   permissions: ['MANAGE_GUILD'],
@@ -17,7 +18,15 @@ module.exports = {
       return message.channel.send('Please provide a valid subcommand (add/remove) and page.');
     }
 
+    const isPremiumUser = await hasPremiumSubscription(message.author.id);
+    const wikiPages = await getWikiPages(message.guild.id);
+    const pageLimit = isPremiumUser ? 20 : 5;
+
     if (subcommand === 'add') {
+      if (wikiPages.length >= pageLimit) {
+        return message.channel.send(`You have reached the maximum number of wiki pages (${pageLimit}). Please remove some pages before adding new ones.`);
+      }
+
       const filter = m => m.author.id === message.author.id;
 
       try {
@@ -52,13 +61,8 @@ module.exports = {
           }
         }
 
-        const wikiChannel = await getWikiChannel(message.guild.id);
-        if (!wikiChannel) {
-          return message.channel.send('No wiki channel is set. Please set a wiki channel using the `wikichannel` command.');
-        }
-
-        await createWikiPage(message.guild.id, page, wikiChannel, title, description, fields, text);
-        message.channel.send(`Wiki page "${page}" created successfully in <#${wikiChannel}>.`);
+        await createWikiPage(message.guild.id, page, message.channel.id, title, description, fields, text);
+        message.channel.send(`Wiki page "${page}" created successfully.`);
       } catch (error) {
         message.channel.send('An error occurred while creating the wiki page. Please try again later.');
       }
@@ -75,7 +79,7 @@ module.exports = {
   },
   data: {
     name: 'wikisetup',
-    description: 'Creates or removes a wiki page',
+    description: 'Creates or removes a wiki page. Free: 5 pages, Premium: 20 pages.',
     options: [
       {
         name: 'add',
@@ -116,7 +120,15 @@ module.exports = {
     const page = interaction.options.getString('page');
     const text = interaction.options.getString('text');
 
+    const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
+    const wikiPages = await getWikiPages(interaction.guild.id);
+    const pageLimit = isPremiumUser ? 20 : 5;
+
     if (subcommand === 'add') {
+      if (wikiPages.length >= pageLimit) {
+        return interaction.reply(`You have reached the maximum number of wiki pages (${pageLimit}). Please remove some pages before adding new ones.`);
+      }
+
       const filter = m => m.author.id === interaction.user.id;
 
       try {
@@ -151,13 +163,8 @@ module.exports = {
           }
         }
 
-        const wikiChannel = await getWikiChannel(interaction.guild.id);
-        if (!wikiChannel) {
-          return interaction.followUp('No wiki channel is set. Please set a wiki channel using the `wikichannel` command.');
-        }
-
-        await createWikiPage(interaction.guild.id, page, wikiChannel, title, description, fields, text);
-        interaction.followUp(`Wiki page "${page}" created successfully in <#${wikiChannel}>.`);
+        await createWikiPage(interaction.guild.id, page, interaction.channel.id, title, description, fields, text);
+        interaction.followUp(`Wiki page "${page}" created successfully.`);
       } catch (error) {
         interaction.followUp('An error occurred while creating the wiki page. Please try again later.');
       }
