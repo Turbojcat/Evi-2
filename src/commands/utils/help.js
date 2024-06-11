@@ -34,6 +34,15 @@ module.exports = {
   },
 };
 
+function addFieldsToPage(page, fields, maxFieldsPerPage) {
+  const remainingFields = fields.slice(page.fields?.length || 0);
+
+  if (remainingFields.length > 0) {
+    const fieldsToAdd = remainingFields.slice(0, maxFieldsPerPage - (page.fields?.length || 0));
+    page.addFields(fieldsToAdd);
+  }
+}
+
 async function executePrefix(message, args, client, commands, slashCommands) {
   const commandName = args[0];
   const isPremiumUser = await hasPremiumSubscription(message.author.id);
@@ -53,13 +62,9 @@ async function executePrefix(message, args, client, commands, slashCommands) {
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle(`Command: ${command.name}`)
-      .setDescription(`${command.description}\n\nUsage: \`${prefix}${command.name} ${command.usage || ''}\``)
-      .addFields(
-        { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
-        { name: 'Premium', value: command.premium ? 'Premium' : (command.premiumPerks ? 'Free / Premium' : 'Free'), inline: true },
-        { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
-      )
-      .setTimestamp();
+      .setDescription(`Description: ${command.description}\nUsage: \`${prefix}${command.name} ${command.usage || ''}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`)
+      .setTimestamp()
+      .setFooter({ text: 'Continued in the next embed...' });
 
     return message.channel.send({ embeds: [embed] });
   } else {
@@ -86,44 +91,58 @@ async function executePrefix(message, args, client, commands, slashCommands) {
     }
 
     const pages = [];
+    const maxFieldsPerPage = 10;
+
+    let totalCommands = 0;
+    let totalAliases = 0;
 
     for (const [category, commands] of Object.entries(categories)) {
-      const commandList = commands.map(command => `\`${command.name}\``).join(', ');
-      const embed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setTitle(`${category.toUpperCase()} Commands`)
-        .setDescription(commandList)
-        .setTimestamp();
-      pages.push(embed);
-    }
+      const commandFields = commands.map(command => {
+        return {
+          name: `\`${command.name}\``,
+          value: `Description: ${command.description}\nUsage: \`${prefix}${command.name} ${command.usage || ''}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`,
+        };
+      });
 
-    if (pages.length === 0) {
-      return message.channel.send('No commands found.');
+      let currentPage = pages[pages.length - 1];
+      if (!currentPage || (currentPage.fields && currentPage.fields.length + commandFields.length > maxFieldsPerPage)) {
+        currentPage = new EmbedBuilder()
+          .setColor('#0099ff')
+          .setTitle('Command List')
+          .setDescription(`Total Commands: \`${totalCommands}\`\nTotal Aliases: \`${totalAliases}\``)
+          .setThumbnail('https://cdn.discordapp.com/attachments/1243553220387803206/1243553264494968923/03cb6922d5bd77418daa85e22319ca08ef5c713a.jpg?ex=66684e3a&is=6666fcba&hm=39e24df505244b6bf9b0cc597a788fe55bb1eeeb17b6c43488780e7b187b77c9&')
+          .setTimestamp();
+
+        pages.push(currentPage);
+      }
+
+      currentPage.addFields({ name: `${category.toUpperCase()}`, value: '\u200B' });
+      addFieldsToPage(currentPage, commandFields, maxFieldsPerPage);
+
+      totalCommands += commands.length;
+      totalAliases += commands.reduce((sum, command) => sum + (command.aliases ? command.aliases.length : 0), 0);
     }
 
     let currentPage = 0;
-    const row = new ActionRowBuilder();
 
-    if (pages.length > 1) {
-      row.addComponents(
-        new ButtonBuilder()
-          .setCustomId('previous')
-          .setLabel('Previous')
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId('next')
-          .setLabel('Next')
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(false)
-      );
-    }
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('previous')
+        .setLabel('Previous')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(true),
+      new ButtonBuilder()
+        .setLabel('Join Evi\'s Support server')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://discord.gg/6tnqjeRach'),
+      new ButtonBuilder()
+        .setCustomId('next')
+        .setLabel('Next')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(pages.length === 1)
+    );
 
-    const helpMessage = await message.channel.send({ embeds: [pages[currentPage]], components: pages.length > 1 ? [row] : [] });
-
-    if (pages.length === 1) {
-      return;
-    }
+    const helpMessage = await message.channel.send({ embeds: [pages[currentPage]], components: [row] });
 
     const collector = helpMessage.createMessageComponentCollector({ componentType: 2, time: 60000 });
 
@@ -135,7 +154,7 @@ async function executePrefix(message, args, client, commands, slashCommands) {
       }
 
       row.components[0].setDisabled(currentPage === 0);
-      row.components[1].setDisabled(currentPage === pages.length - 1);
+      row.components[2].setDisabled(currentPage === pages.length - 1);
 
       await interaction.update({ embeds: [pages[currentPage]], components: [row] });
     });
@@ -146,36 +165,39 @@ async function executePrefix(message, args, client, commands, slashCommands) {
     });
   }
 }
+function addFieldsToPage(page, fields, maxFieldsPerPage) {
+  const remainingFields = fields.slice(page.fields?.length || 0);
 
-async function executeSlash(interaction, client, commands, slashCommands) {
-  const { options } = interaction;
-  const commandName = options.getString('command');
-  const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
-  const userPermissionLevel = await getRolePermissionLevel(interaction.guild.id, interaction.member.roles.highest.id);
+  if (remainingFields.length > 0) {
+    const fieldsToAdd = remainingFields.slice(0, maxFieldsPerPage - (page.fields?.length || 0));
+    page.addFields(fieldsToAdd);
+  }
+}
+
+async function executePrefix(message, args, client, commands, slashCommands) {
+  const commandName = args[0];
+  const isPremiumUser = await hasPremiumSubscription(message.author.id);
+  const userPermissionLevel = await getRolePermissionLevel(message.guild.id, message.member.roles.highest.id);
 
   const adminLevels = ['admin', 'owner', 'moderator', 'normal'];
   if (module.exports.permissionLevel.length > 0 && !adminLevels.includes(userPermissionLevel)) {
-    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+    return message.channel.send('You do not have permission to use this command.');
   }
 
   if (commandName) {
-    const command = slashCommands.get(commandName.toLowerCase());
+    const command = commands[commandName.toLowerCase()];
     if (!command) {
-      return interaction.reply({ content: `No information found for command: \`${commandName}\``, ephemeral: true });
+      return message.channel.send(`No information found for command: \`${commandName}\``);
     }
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`Command: ${command.data.name}`)
-      .setDescription(command.data.description)
-      .addFields(
-        { name: 'Category', value: command.category ? command.category.toUpperCase() : 'None', inline: true },
-        { name: 'Premium', value: command.premium ? 'Premium' : (command.premiumPerks ? 'Free / Premium' : 'Free'), inline: true },
-        { name: '\u200B', value: '[Join Evi\'s Support server](https://discord.gg/6tnqjeRach)' }
-      )
-      .setTimestamp();
+      .setTitle(`Command: ${command.name}`)
+      .setDescription(`Description: ${command.description}\nUsage: \`${prefix}${command.name} ${command.usage || ''}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`)
+      .setTimestamp()
+      .setFooter({ text: 'Continued in the next embed...' });
 
-    return interaction.reply({ embeds: [embed] });
+    return message.channel.send({ embeds: [embed] });
   } else {
     const categories = {};
 
@@ -200,58 +222,72 @@ async function executeSlash(interaction, client, commands, slashCommands) {
     }
 
     const pages = [];
+    const maxFieldsPerPage = 10;
+
+    let totalCommands = 0;
+    let totalAliases = 0;
 
     for (const [category, commands] of Object.entries(categories)) {
-      const commandList = commands.map(command => `\`${command.data.name}\``).join(', ');
-      const embed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setTitle(`${category.toUpperCase()} Commands`)
-        .setDescription(commandList)
-        .setTimestamp();
-      pages.push(embed);
-    }
+      const commandFields = commands.map(command => {
+        return {
+          name: `\`${command.name}\``,
+          value: `Description: ${command.description}\nUsage: \`${prefix}${command.name} ${command.usage || ''}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`,
+        };
+      });
 
-    if (pages.length === 0) {
-      return interaction.reply({ content: 'No commands found.', ephemeral: true });
+      let currentPage = pages[pages.length - 1];
+      if (!currentPage || (currentPage.fields && currentPage.fields.length + commandFields.length > maxFieldsPerPage)) {
+        currentPage = new EmbedBuilder()
+          .setColor('#0099ff')
+          .setTitle('Command List')
+          .setDescription(`Total Commands: \`${totalCommands}\`\nTotal Aliases: \`${totalAliases}\``)
+          .setThumbnail('https://cdn.discordapp.com/attachments/1243553220387803206/1243553264494968923/03cb6922d5bd77418daa85e22319ca08ef5c713a.jpg?ex=66684e3a&is=6666fcba&hm=39e24df505244b6bf9b0cc597a788fe55bb1eeeb17b6c43488780e7b187b77c9&')
+          .setTimestamp();
+
+        pages.push(currentPage);
+      }
+
+      currentPage.addFields({ name: `${category.toUpperCase()}`, value: '\u200B' });
+      addFieldsToPage(currentPage, commandFields, maxFieldsPerPage);
+
+      totalCommands += commands.length;
+      totalAliases += commands.reduce((sum, command) => sum + (command.aliases ? command.aliases.length : 0), 0);
     }
 
     let currentPage = 0;
-    const row = new ActionRowBuilder();
 
-    if (pages.length > 1) {
-      row.addComponents(
-        new ButtonBuilder()
-          .setCustomId('previous')
-          .setLabel('Previous')
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId('next')
-          .setLabel('Next')
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(false)
-      );
-    }
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('previous')
+        .setLabel('Previous')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(true),
+      new ButtonBuilder()
+        .setLabel('Join Evi\'s Support server')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://discord.gg/6tnqjeRach'),
+      new ButtonBuilder()
+        .setCustomId('next')
+        .setLabel('Next')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(pages.length === 1)
+    );
 
-    const helpMessage = await interaction.reply({ embeds: [pages[currentPage]], components: pages.length > 1 ? [row] : [], fetchReply: true });
-
-    if (pages.length === 1) {
-      return;
-    }
+    const helpMessage = await message.channel.send({ embeds: [pages[currentPage]], components: [row] });
 
     const collector = helpMessage.createMessageComponentCollector({ componentType: 2, time: 60000 });
 
-    collector.on('collect', async (buttonInteraction) => {
-      if (buttonInteraction.customId === 'previous') {
+    collector.on('collect', async (interaction) => {
+      if (interaction.customId === 'previous') {
         currentPage--;
-      } else if (buttonInteraction.customId === 'next') {
+      } else if (interaction.customId === 'next') {
         currentPage++;
       }
 
       row.components[0].setDisabled(currentPage === 0);
-      row.components[1].setDisabled(currentPage === pages.length - 1);
+      row.components[2].setDisabled(currentPage === pages.length - 1);
 
-      await buttonInteraction.update({ embeds: [pages[currentPage]], components: [row] });
+      await interaction.update({ embeds: [pages[currentPage]], components: [row] });
     });
 
     collector.on('end', async () => {
