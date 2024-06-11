@@ -1,10 +1,9 @@
-// src/commands/moderation/moderationRole.js
-const { setModeratorRole, getModeratorRoles, removeModeratorRole } = require('../../database/database');
-const { hasPremiumSubscription } = require('../../database/database');
+// src/commands/moderation/moderatorRole.js
+const { setModeratorRole, getModeratorRoles, removeModeratorRole } = require('../../database/adminModRoles');
 
 module.exports = {
-  name: 'moderationrole',
-  description: 'Manages the moderator roles for the server (Free to use has 1 role u can sett. premium have 5.)',
+  name: 'moderatorrole',
+  description: 'Manages the moderator roles for the server',
   usage: '<add|remove|list> [role]',
   aliases: ['modrole', 'mr'],
   permissions: ['MANAGE_GUILD'],
@@ -12,9 +11,6 @@ module.exports = {
   execute: async (message, args) => {
     const subcommand = args[0];
     const roleInput = args[1];
-
-    const isPremium = await hasPremiumSubscription(message.author.id);
-    const maxRoles = isPremium ? 5 : 1;
 
     if (subcommand === 'add') {
       if (!roleInput) {
@@ -35,12 +31,6 @@ module.exports = {
 
       if (!roleId) {
         return message.reply('Invalid role. Please provide a valid role mention, ID, or name.');
-      }
-
-      const currentModeratorRoles = await getModeratorRoles(message.guild.id);
-
-      if (currentModeratorRoles.length >= maxRoles) {
-        return message.reply(`You can only add up to ${maxRoles} moderator role(s). Please remove a role before adding a new one.`);
       }
 
       await setModeratorRole(message.guild.id, roleId);
@@ -78,12 +68,12 @@ module.exports = {
         message.reply(`Current moderator roles: ${roleList}`);
       }
     } else {
-      message.reply('Invalid subcommand. Please use `add`, `remove`, or `list`.');
+      message.reply('Invalid subcommand. Please use "add", "remove", or "list".');
     }
   },
   data: {
-    name: 'moderationrole',
-    description: 'Manages the moderator roles for the server (Free to use has 1 role u can sett. premium have 5.)',
+    name: 'moderatorrole',
+    description: 'Manages the moderator roles for the server',
     options: [
       {
         name: 'add',
@@ -122,21 +112,12 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
     const roleInput = interaction.options.getRole('role');
 
-    const isPremium = await hasPremiumSubscription(interaction.user.id);
-    const maxRoles = isPremium ? 5 : 1;
-
     if (subcommand === 'add') {
-      const currentModeratorRoles = await getModeratorRoles(interaction.guild.id);
-
-      if (currentModeratorRoles.length >= maxRoles) {
-        return interaction.reply({ content: `You can only add up to ${maxRoles} moderator role(s). Please remove a role before adding a new one.`, ephemeral: true });
-      }
-
       await setModeratorRole(interaction.guild.id, roleInput.id);
-      interaction.reply(`Added <@&${roleInput.id}> as a moderator role.`);
+      interaction.reply(`Added ${roleInput} as a moderator role.`);
     } else if (subcommand === 'remove') {
       await removeModeratorRole(interaction.guild.id, roleInput.id);
-      interaction.reply(`Removed <@&${roleInput.id}> from moderator roles.`);
+      interaction.reply(`Removed ${roleInput} from moderator roles.`);
     } else if (subcommand === 'list') {
       const moderatorRoles = await getModeratorRoles(interaction.guild.id);
 

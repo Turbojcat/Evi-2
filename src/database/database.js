@@ -118,110 +118,6 @@ const getRolePermissionLevel = (guildId, roleId) => {
   });
 };
 
-const setAdminRole = (guildId, roleId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'INSERT INTO role_permissions (guildId, roleId, permissionLevel) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE permissionLevel = VALUES(permissionLevel)',
-      [guildId, roleId, 'admin'],
-      (err) => {
-        if (err) {
-          console.error('Error setting admin role:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const getAdminRoles = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT roleId FROM role_permissions WHERE guildId = ? AND permissionLevel = ?',
-      [guildId, 'admin'],
-      (err, results) => {
-        if (err) {
-          console.error('Error getting admin roles:', err);
-          reject(err);
-        } else {
-          const adminRoles = results.map((row) => row.roleId);
-          resolve(adminRoles);
-        }
-      }
-    );
-  });
-};
-
-const removeAdminRole = (guildId, roleId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'DELETE FROM role_permissions WHERE guildId = ? AND roleId = ? AND permissionLevel = ?',
-      [guildId, roleId, 'admin'],
-      (err) => {
-        if (err) {
-          console.error('Error removing admin role:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const setModeratorRole = (guildId, roleId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'INSERT INTO role_permissions (guildId, roleId, permissionLevel) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE permissionLevel = VALUES(permissionLevel)',
-      [guildId, roleId, 'moderator'],
-      (err) => {
-        if (err) {
-          console.error('Error setting moderator role:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const getModeratorRoles = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT roleId FROM role_permissions WHERE guildId = ? AND permissionLevel = ?',
-      [guildId, 'moderator'],
-      (err, results) => {
-        if (err) {
-          console.error('Error getting moderator roles:', err);
-          reject(err);
-        } else {
-          const moderatorRoles = results.map((row) => row.roleId);
-          resolve(moderatorRoles);
-        }
-      }
-    );
-  });
-};
-
-const removeModeratorRole = (guildId, roleId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'DELETE FROM role_permissions WHERE guildId = ? AND roleId = ? AND permissionLevel = ?',
-      [guildId, roleId, 'moderator'],
-      (err) => {
-        if (err) {
-          console.error('Error removing moderator role:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
 const addOwnerRole = (guildId, ownerId) => {
   return new Promise((resolve, reject) => {
     const query = 'INSERT INTO role_permissions (guildId, roleId, permissionLevel) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE permissionLevel = VALUES(permissionLevel)';
@@ -520,57 +416,6 @@ const setCustomCommandLimit = (guildId, limit) => {
   });
 };
 
-const isSuggestionBlacklisted = (userId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT * FROM suggestion_blacklist WHERE user_id = ?',
-      [userId],
-      (err, results) => {
-        if (err) {
-          console.error('Error checking suggestion blacklist:', err);
-          reject(err);
-        } else {
-          resolve(results.length > 0);
-        }
-      }
-    );
-  });
-};
-
-const addSuggestionBlacklist = (userId, reason) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'INSERT INTO suggestion_blacklist (user_id, reason) VALUES (?, ?)',
-      [userId, reason],
-      (err) => {
-        if (err) {
-          console.error('Error adding user to suggestion blacklist:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const removeSuggestionBlacklist = (userId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'DELETE FROM suggestion_blacklist WHERE user_id = ?',
-      [userId],
-      (err) => {
-        if (err) {
-          console.error('Error removing user from suggestion blacklist:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
 const createUserProfilesTable = () => {
   const sql = `
     CREATE TABLE IF NOT EXISTS user_profiles (
@@ -600,12 +445,6 @@ module.exports = {
   setupDatabase,
   hasPremiumSubscription,
   getRolePermissionLevel,
-  setAdminRole,
-  getAdminRoles,
-  removeAdminRole,
-  setModeratorRole,
-  getModeratorRoles,
-  removeModeratorRole,
   addOwnerRole,
   addPremiumSubscription,
   removePremiumSubscription,
@@ -623,8 +462,5 @@ module.exports = {
   getCustomCommands,
   getCustomCommandLimit,
   setCustomCommandLimit,
-  isSuggestionBlacklisted,
-  addSuggestionBlacklist,
-  removeSuggestionBlacklist,
   createUserProfilesTable,
 };

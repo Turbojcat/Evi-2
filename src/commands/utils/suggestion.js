@@ -1,11 +1,11 @@
 // src/commands/utils/suggestion.js
 const { EmbedBuilder } = require('discord.js');
 const { suggestionChannelId } = require('../../config');
-const { isSuggestionBlacklisted } = require('../../database/database');
+const { isSuggestionBlacklisted, createSuggestion } = require('../../database/suggestiondb');
 
 module.exports = {
   name: 'suggestion',
-  description: 'Submit a suggestion for function to Evi!s',
+  description: 'Submit a suggestion',
   usage: '<suggestion>',
   aliases: ['suggest'],
   permissions: [],
@@ -22,25 +22,11 @@ module.exports = {
       return message.channel.send('You are blacklisted from submitting suggestions.');
     }
 
-    const suggestionChannel = message.guild.channels.cache.get(suggestionChannelId);
-
-    if (!suggestionChannel) {
-      return message.channel.send('Suggestion channel not found. Please contact an administrator.');
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle('New Suggestion')
-      .setDescription(suggestion)
-      .setAuthor(message.author.tag, message.author.displayAvatarURL())
-      .setTimestamp();
-
     try {
-      const sentMessage = await suggestionChannel.send({ embeds: [embed] });
-      await sentMessage.react('👍');
-      await sentMessage.react('👎');
+      await createSuggestion(message.author.id, message.guild.id, suggestion);
       message.channel.send('Your suggestion has been submitted. Thank you!');
     } catch (error) {
-      console.error('Error sending suggestion:', error);
+      console.error('Error saving suggestion:', error);
       message.channel.send('An error occurred while submitting your suggestion. Please try again later.');
     }
   },
@@ -64,25 +50,11 @@ module.exports = {
       return interaction.reply({ content: 'You are blacklisted from submitting suggestions.', ephemeral: true });
     }
 
-    const suggestionChannel = interaction.guild.channels.cache.get(suggestionChannelId);
-
-    if (!suggestionChannel) {
-      return interaction.reply({ content: 'Suggestion channel not found. Please contact an administrator.', ephemeral: true });
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle('New Suggestion')
-      .setDescription(suggestion)
-      .setAuthor(interaction.user.tag, interaction.user.displayAvatarURL())
-      .setTimestamp();
-
     try {
-      const sentMessage = await suggestionChannel.send({ embeds: [embed] });
-      await sentMessage.react('👍');
-      await sentMessage.react('👎');
+      await createSuggestion(interaction.user.id, interaction.guild.id, suggestion);
       interaction.reply({ content: 'Your suggestion has been submitted. Thank you!', ephemeral: true });
     } catch (error) {
-      console.error('Error sending suggestion:', error);
+      console.error('Error saving suggestion:', error);
       interaction.reply({ content: 'An error occurred while submitting your suggestion. Please try again later.', ephemeral: true });
     }
   },

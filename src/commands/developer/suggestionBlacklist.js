@@ -1,5 +1,5 @@
 // src/commands/developer/suggestionBlacklist.js
-const { addSuggestionBlacklist, removeSuggestionBlacklist } = require('../../database/database');
+const { addSuggestionBlacklist, removeSuggestionBlacklist } = require('../../database/suggestiondb');
 const { blacklistLogChannelId, developerIDs } = require('../../config');
 
 module.exports = {

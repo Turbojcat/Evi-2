@@ -34,15 +34,6 @@ module.exports = {
   },
 };
 
-function addFieldsToPage(page, fields, maxFieldsPerPage) {
-  const remainingFields = fields.slice(page.fields?.length || 0);
-
-  if (remainingFields.length > 0) {
-    const fieldsToAdd = remainingFields.slice(0, maxFieldsPerPage - (page.fields?.length || 0));
-    page.addFields(fieldsToAdd);
-  }
-}
-
 async function executePrefix(message, args, client, commands, slashCommands) {
   const commandName = args[0];
   const isPremiumUser = await hasPremiumSubscription(message.author.id);
@@ -90,37 +81,24 @@ async function executePrefix(message, args, client, commands, slashCommands) {
       }
     }
 
-    const pages = [];
-    const maxFieldsPerPage = 10;
-
-    let totalCommands = 0;
-    let totalAliases = 0;
+    const embeds = [];
 
     for (const [category, commands] of Object.entries(categories)) {
-      const commandFields = commands.map(command => {
-        return {
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`${category.toUpperCase()} Commands`)
+        .setDescription(`Here are the available commands in the ${category} category:`)
+        .setThumbnail('https://cdn.discordapp.com/attachments/1243553220387803206/1243553264494968923/03cb6922d5bd77418daa85e22319ca08ef5c713a.jpg?ex=66684e3a&is=6666fcba&hm=39e24df505244b6bf9b0cc597a788fe55bb1eeeb17b6c43488780e7b187b77c9&')
+        .setTimestamp();
+
+      for (const command of commands) {
+        embed.addFields({
           name: `\`${command.name}\``,
           value: `Description: ${command.description}\nUsage: \`${prefix}${command.name} ${command.usage || ''}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`,
-        };
-      });
-
-      let currentPage = pages[pages.length - 1];
-      if (!currentPage || (currentPage.fields && currentPage.fields.length + commandFields.length > maxFieldsPerPage)) {
-        currentPage = new EmbedBuilder()
-          .setColor('#0099ff')
-          .setTitle('Command List')
-          .setDescription(`Total Commands: \`${totalCommands}\`\nTotal Aliases: \`${totalAliases}\``)
-          .setThumbnail('https://cdn.discordapp.com/attachments/1243553220387803206/1243553264494968923/03cb6922d5bd77418daa85e22319ca08ef5c713a.jpg?ex=66684e3a&is=6666fcba&hm=39e24df505244b6bf9b0cc597a788fe55bb1eeeb17b6c43488780e7b187b77c9&')
-          .setTimestamp();
-
-        pages.push(currentPage);
+        });
       }
 
-      currentPage.addFields({ name: `${category.toUpperCase()}`, value: '\u200B' });
-      addFieldsToPage(currentPage, commandFields, maxFieldsPerPage);
-
-      totalCommands += commands.length;
-      totalAliases += commands.reduce((sum, command) => sum + (command.aliases ? command.aliases.length : 0), 0);
+      embeds.push(embed);
     }
 
     let currentPage = 0;
@@ -139,10 +117,10 @@ async function executePrefix(message, args, client, commands, slashCommands) {
         .setCustomId('next')
         .setLabel('Next')
         .setStyle(ButtonStyle.Primary)
-        .setDisabled(pages.length === 1)
+        .setDisabled(embeds.length === 1)
     );
 
-    const helpMessage = await message.channel.send({ embeds: [pages[currentPage]], components: [row] });
+    const helpMessage = await message.channel.send({ embeds: [embeds[currentPage]], components: [row] });
 
     const collector = helpMessage.createMessageComponentCollector({ componentType: 2, time: 60000 });
 
@@ -154,9 +132,9 @@ async function executePrefix(message, args, client, commands, slashCommands) {
       }
 
       row.components[0].setDisabled(currentPage === 0);
-      row.components[2].setDisabled(currentPage === pages.length - 1);
+      row.components[2].setDisabled(currentPage === embeds.length - 1);
 
-      await interaction.update({ embeds: [pages[currentPage]], components: [row] });
+      await interaction.update({ embeds: [embeds[currentPage]], components: [row] });
     });
 
     collector.on('end', async () => {
@@ -165,39 +143,32 @@ async function executePrefix(message, args, client, commands, slashCommands) {
     });
   }
 }
-function addFieldsToPage(page, fields, maxFieldsPerPage) {
-  const remainingFields = fields.slice(page.fields?.length || 0);
 
-  if (remainingFields.length > 0) {
-    const fieldsToAdd = remainingFields.slice(0, maxFieldsPerPage - (page.fields?.length || 0));
-    page.addFields(fieldsToAdd);
-  }
-}
-
-async function executePrefix(message, args, client, commands, slashCommands) {
-  const commandName = args[0];
-  const isPremiumUser = await hasPremiumSubscription(message.author.id);
-  const userPermissionLevel = await getRolePermissionLevel(message.guild.id, message.member.roles.highest.id);
+async function executeSlash(interaction, client, commands, slashCommands) {
+  const { options } = interaction;
+  const commandName = options.getString('command');
+  const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
+  const userPermissionLevel = await getRolePermissionLevel(interaction.guild.id, interaction.member.roles.highest.id);
 
   const adminLevels = ['admin', 'owner', 'moderator', 'normal'];
   if (module.exports.permissionLevel.length > 0 && !adminLevels.includes(userPermissionLevel)) {
-    return message.channel.send('You do not have permission to use this command.');
+    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
   }
 
   if (commandName) {
-    const command = commands[commandName.toLowerCase()];
+    const command = slashCommands.get(commandName.toLowerCase());
     if (!command) {
-      return message.channel.send(`No information found for command: \`${commandName}\``);
+      return interaction.reply({ content: `No information found for command: \`${commandName}\``, ephemeral: true });
     }
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`Command: ${command.name}`)
-      .setDescription(`Description: ${command.description}\nUsage: \`${prefix}${command.name} ${command.usage || ''}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`)
+      .setTitle(`Command: ${command.data.name}`)
+      .setDescription(`Description: ${command.data.description}\nUsage: \`/${command.data.name} ${command.data.options.map(option => `[${option.name}]`).join(' ')}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`)
       .setTimestamp()
       .setFooter({ text: 'Continued in the next embed...' });
 
-    return message.channel.send({ embeds: [embed] });
+    return interaction.reply({ embeds: [embed] });
   } else {
     const categories = {};
 
@@ -221,37 +192,24 @@ async function executePrefix(message, args, client, commands, slashCommands) {
       }
     }
 
-    const pages = [];
-    const maxFieldsPerPage = 10;
-
-    let totalCommands = 0;
-    let totalAliases = 0;
+    const embeds = [];
 
     for (const [category, commands] of Object.entries(categories)) {
-      const commandFields = commands.map(command => {
-        return {
-          name: `\`${command.name}\``,
-          value: `Description: ${command.description}\nUsage: \`${prefix}${command.name} ${command.usage || ''}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`,
-        };
-      });
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`${category.toUpperCase()} Commands`)
+        .setDescription(`Here are the available commands in the ${category} category:`)
+        .setThumbnail('https://cdn.discordapp.com/attachments/1243553220387803206/1243553264494968923/03cb6922d5bd77418daa85e22319ca08ef5c713a.jpg?ex=66684e3a&is=6666fcba&hm=39e24df505244b6bf9b0cc597a788fe55bb1eeeb17b6c43488780e7b187b77c9&')
+        .setTimestamp();
 
-      let currentPage = pages[pages.length - 1];
-      if (!currentPage || (currentPage.fields && currentPage.fields.length + commandFields.length > maxFieldsPerPage)) {
-        currentPage = new EmbedBuilder()
-          .setColor('#0099ff')
-          .setTitle('Command List')
-          .setDescription(`Total Commands: \`${totalCommands}\`\nTotal Aliases: \`${totalAliases}\``)
-          .setThumbnail('https://cdn.discordapp.com/attachments/1243553220387803206/1243553264494968923/03cb6922d5bd77418daa85e22319ca08ef5c713a.jpg?ex=66684e3a&is=6666fcba&hm=39e24df505244b6bf9b0cc597a788fe55bb1eeeb17b6c43488780e7b187b77c9&')
-          .setTimestamp();
-
-        pages.push(currentPage);
+      for (const command of commands) {
+        embed.addFields({
+          name: `\`${command.data.name}\``,
+          value: `Description: ${command.data.description}\nUsage: \`/${command.data.name} ${command.data.options.map(option => `[${option.name}]`).join(' ')}\`\nPremium: ${command.premium ? 'Yes' : (command.premiumPerks ? 'Both' : 'No')}`,
+        });
       }
 
-      currentPage.addFields({ name: `${category.toUpperCase()}`, value: '\u200B' });
-      addFieldsToPage(currentPage, commandFields, maxFieldsPerPage);
-
-      totalCommands += commands.length;
-      totalAliases += commands.reduce((sum, command) => sum + (command.aliases ? command.aliases.length : 0), 0);
+      embeds.push(embed);
     }
 
     let currentPage = 0;
@@ -270,24 +228,24 @@ async function executePrefix(message, args, client, commands, slashCommands) {
         .setCustomId('next')
         .setLabel('Next')
         .setStyle(ButtonStyle.Primary)
-        .setDisabled(pages.length === 1)
+        .setDisabled(embeds.length === 1)
     );
 
-    const helpMessage = await message.channel.send({ embeds: [pages[currentPage]], components: [row] });
+    const helpMessage = await interaction.reply({ embeds: [embeds[currentPage]], components: [row], fetchReply: true });
 
     const collector = helpMessage.createMessageComponentCollector({ componentType: 2, time: 60000 });
 
-    collector.on('collect', async (interaction) => {
-      if (interaction.customId === 'previous') {
+    collector.on('collect', async (buttonInteraction) => {
+      if (buttonInteraction.customId === 'previous') {
         currentPage--;
-      } else if (interaction.customId === 'next') {
+      } else if (buttonInteraction.customId === 'next') {
         currentPage++;
       }
 
       row.components[0].setDisabled(currentPage === 0);
-      row.components[2].setDisabled(currentPage === pages.length - 1);
+      row.components[2].setDisabled(currentPage === embeds.length - 1);
 
-      await interaction.update({ embeds: [pages[currentPage]], components: [row] });
+      await buttonInteraction.update({ embeds: [embeds[currentPage]], components: [row] });
     });
 
     collector.on('end', async () => {

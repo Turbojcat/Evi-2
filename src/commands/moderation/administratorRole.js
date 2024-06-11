@@ -1,24 +1,20 @@
-// src/commands/moderation/adminRole.js
-const { setAdminRole, getAdminRoles, removeAdminRole } = require('../../database/database');
-const { hasPremiumSubscription } = require('../../database/database');
+// src/commands/moderation/administratorRole.js
+const { setAdminRole, getAdminRoles, removeAdminRole } = require('../../database/adminModRoles');
 
 module.exports = {
-  name: 'adminrole',
-  description: 'Manages the admin roles for the server (Free to use has 1 role u can sett. premium have 5.)',
+  name: 'administratorrole',
+  description: 'Manages the administrator roles for the server',
   usage: '<add|remove|list> [role]',
-  aliases: ['ar'],
+  aliases: ['adminrole', 'ar'],
   permissions: ['MANAGE_GUILD'],
-  permissionLevel: ['owner'],
+  permissionLevel: ['admin'],
   execute: async (message, args) => {
     const subcommand = args[0];
     const roleInput = args[1];
 
-    const isPremium = await hasPremiumSubscription(message.author.id);
-    const maxRoles = isPremium ? 5 : 1;
-
     if (subcommand === 'add') {
       if (!roleInput) {
-        return message.reply('Please provide a role to add as an admin role.');
+        return message.reply('Please provide a role to add as an administrator role.');
       }
 
       let roleId;
@@ -37,17 +33,11 @@ module.exports = {
         return message.reply('Invalid role. Please provide a valid role mention, ID, or name.');
       }
 
-      const currentAdminRoles = await getAdminRoles(message.guild.id);
-
-      if (currentAdminRoles.length >= maxRoles) {
-        return message.reply(`You can only add up to ${maxRoles} admin role(s). Please remove a role before adding a new one.`);
-      }
-
       await setAdminRole(message.guild.id, roleId);
-      message.reply(`Added <@&${roleId}> as an admin role.`);
+      message.reply(`Added <@&${roleId}> as an administrator role.`);
     } else if (subcommand === 'remove') {
       if (!roleInput) {
-        return message.reply('Please provide a role to remove from admin roles.');
+        return message.reply('Please provide a role to remove from administrator roles.');
       }
 
       let roleId;
@@ -67,33 +57,33 @@ module.exports = {
       }
 
       await removeAdminRole(message.guild.id, roleId);
-      message.reply(`Removed <@&${roleId}> from admin roles.`);
+      message.reply(`Removed <@&${roleId}> from administrator roles.`);
     } else if (subcommand === 'list') {
       const adminRoles = await getAdminRoles(message.guild.id);
 
       if (adminRoles.length === 0) {
-        message.reply('There are no admin roles set.');
+        message.reply('There are no administrator roles set.');
       } else {
         const roleList = adminRoles.map(roleId => `<@&${roleId}>`).join(', ');
-        message.reply(`Current admin roles: ${roleList}`);
+        message.reply(`Current administrator roles: ${roleList}`);
       }
     } else {
-      message.reply('Invalid subcommand. Please use `add`, `remove`, or `list`.');
+      message.reply('Invalid subcommand. Please use "add", "remove", or "list".');
     }
   },
   data: {
-    name: 'adminrole',
-    description: 'Manages the admin roles for the server (Free to use has 1 role u can sett. premium have 5.)',
+    name: 'administratorrole',
+    description: 'Manages the administrator roles for the server',
     options: [
       {
         name: 'add',
         type: 1, // SUB_COMMAND
-        description: 'Adds an admin role for the server',
+        description: 'Adds an administrator role for the server',
         options: [
           {
             name: 'role',
             type: 8, // ROLE
-            description: 'The role to add as an admin role',
+            description: 'The role to add as an administrator role',
             required: true,
           },
         ],
@@ -101,12 +91,12 @@ module.exports = {
       {
         name: 'remove',
         type: 1, // SUB_COMMAND
-        description: 'Removes an admin role for the server',
+        description: 'Removes an administrator role for the server',
         options: [
           {
             name: 'role',
             type: 8, // ROLE
-            description: 'The role to remove from admin roles',
+            description: 'The role to remove from administrator roles',
             required: true,
           },
         ],
@@ -114,7 +104,7 @@ module.exports = {
       {
         name: 'list',
         type: 1, // SUB_COMMAND
-        description: 'Lists all admin roles for the server',
+        description: 'Lists all administrator roles for the server',
       },
     ],
   },
@@ -122,29 +112,20 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
     const roleInput = interaction.options.getRole('role');
 
-    const isPremium = await hasPremiumSubscription(interaction.user.id);
-    const maxRoles = isPremium ? 5 : 1;
-
     if (subcommand === 'add') {
-      const currentAdminRoles = await getAdminRoles(interaction.guild.id);
-
-      if (currentAdminRoles.length >= maxRoles) {
-        return interaction.reply({ content: `You can only add up to ${maxRoles} admin role(s). Please remove a role before adding a new one.`, ephemeral: true });
-      }
-
       await setAdminRole(interaction.guild.id, roleInput.id);
-      interaction.reply(`Added <@&${roleInput.id}> as an admin role.`);
+      interaction.reply(`Added ${roleInput} as an administrator role.`);
     } else if (subcommand === 'remove') {
       await removeAdminRole(interaction.guild.id, roleInput.id);
-      interaction.reply(`Removed <@&${roleInput.id}> from admin roles.`);
+      interaction.reply(`Removed ${roleInput} from administrator roles.`);
     } else if (subcommand === 'list') {
       const adminRoles = await getAdminRoles(interaction.guild.id);
 
       if (adminRoles.length === 0) {
-        interaction.reply('There are no admin roles set.');
+        interaction.reply('There are no administrator roles set.');
       } else {
         const roleList = adminRoles.map(roleId => `<@&${roleId}>`).join(', ');
-        interaction.reply(`Current admin roles: ${roleList}`);
+        interaction.reply(`Current administrator roles: ${roleList}`);
       }
     }
   },

@@ -1,14 +1,17 @@
 // src/evi.js
-const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, ActivityType, EmbedBuilder } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord.js');
-const { token } = require('./config');
+const { token, suggestionChannelId } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
 const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, createUserProfilesTable } = require('./database/database');
 const { createWikiPageTable } = require('./database/wiki');
 const { createWelcomeLeaveTable, getWelcomeMessage, getLeaveMessage } = require('./database/welcomeLeave');
 const { replacePlaceholders } = require('./placeholders');
+const { createAdminModRolesTable } = require('./database/adminModRoles');
+const { createSuggestionTable } = require('./database/suggestiondb');
+const { getNewSuggestions, markSuggestionAsSent } = require('./database/suggestiondb');
 
 const client = new Client({
   intents: [
@@ -43,6 +46,37 @@ function updateActivity() {
   setTimeout(updateActivity, 30000); // Update activity every 30 seconds
 }
 
+async function sendSuggestionsToEvi(client) {
+  const suggestionChannel = client.channels.cache.get(suggestionChannelId);
+
+  if (!suggestionChannel) {
+    console.error('Suggestion channel not found on Evi\'s server.');
+    return;
+  }
+
+  const newSuggestions = await getNewSuggestions();
+
+  for (const suggestion of newSuggestions) {
+    const { id, user_id, guild_id, suggestion: suggestionText } = suggestion;
+
+    const embed = new EmbedBuilder()
+      .setTitle('New Suggestion')
+      .setDescription(suggestionText)
+      .addFields(
+        { name: 'User ID', value: user_id },
+        { name: 'Guild ID', value: guild_id }
+      )
+      .setTimestamp();
+
+    try {
+      await suggestionChannel.send({ embeds: [embed] });
+      await markSuggestionAsSent(id);
+    } catch (error) {
+      console.error('Error sending suggestion to Evi\'s server:', error);
+    }
+  }
+}
+
 client.once('ready', () => {
   updateActivity();
   const commandsPath = path.join(__dirname, 'commands');
@@ -51,6 +85,8 @@ client.once('ready', () => {
   createUserProfilesTable();
   createWikiPageTable();
   createWelcomeLeaveTable();
+  createAdminModRolesTable();
+  createSuggestionTable();
 
   const { commandCount, aliasCount } = commandHandler.getCommandStats();
   console.log(`${client.user.tag} (${client.user.id}) is ready with ${commandCount} commands and ${aliasCount} aliases, serving ${client.guilds.cache.size} servers and ${client.users.cache.size} users!`);
@@ -68,6 +104,10 @@ client.once('ready', () => {
       console.error(error);
     }
   })();
+
+  setInterval(() => {
+    sendSuggestionsToEvi(client);
+  }, 60000); // Check for new suggestions every minute
 });
 
 client.on('messageCreate', (message) => {
