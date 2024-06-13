@@ -16,7 +16,6 @@ const createEconomyTable = () => {
     if (error) {
       console.error('Error creating economy table:', error);
     } else {
-      console.log('Economy table created successfully');
     }
   });
 };
@@ -35,7 +34,6 @@ const createEcoSettingsTable = () => {
     if (error) {
       console.error('Error creating eco_settings table:', error);
     } else {
-      console.log('Eco settings table created successfully');
     }
   });
 };

@@ -13,6 +13,8 @@ module.exports = {
   blacklistLogChannelId: '1243887500737511498',
   approvedSuggestionChannelId: '1250635932021817395',
   deniedSuggestionChannelId: '1250636001332953118',
+  discordRulesRoleId: '1250826285379227659',
+  eviRulesRoleId: '1250826886783696977',
   dbConfig: {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,

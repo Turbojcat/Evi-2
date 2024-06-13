@@ -257,7 +257,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
   console.log('Guild ID:', guild.id);
   console.log('Message ID:', message.id);
   const reactionRoles = await getReactionRoles(guild.id, message.id);
+  console.log('Reaction Roles from DB:', reactionRoles);
   console.log('Reaction Emoji:', reaction.emoji.name);
+
+  // Check if the message has any reaction roles set up
+  if (reactionRoles.length === 0) return;
+
   let emojiIdentifier = reaction.emoji.name;
   if (reaction.emoji.id) {
     emojiIdentifier = reaction.emoji.id;
@@ -290,7 +295,12 @@ client.on('messageReactionRemove', async (reaction, user) => {
   console.log('Guild ID:', guild.id);
   console.log('Message ID:', message.id);
   const reactionRoles = await getReactionRoles(guild.id, message.id);
+  console.log('Reaction Roles from DB:', reactionRoles);
   console.log('Reaction Emoji:', reaction.emoji.name);
+
+  // Check if the message has any reaction roles set up
+  if (reactionRoles.length === 0) return;
+
   let emojiIdentifier = reaction.emoji.name;
   if (reaction.emoji.id) {
     emojiIdentifier = reaction.emoji.id;
