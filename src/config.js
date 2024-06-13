@@ -11,6 +11,8 @@ module.exports = {
   sessionSecret: process.env.SESSION_SECRET,
   suggestionChannelId: '1243887358974234674',
   blacklistLogChannelId: '1243887500737511498',
+  approvedSuggestionChannelId: '1250635932021817395',
+  deniedSuggestionChannelId: '1250636001332953118',
   dbConfig: {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,

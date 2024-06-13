@@ -1,125 +1,141 @@
 // src/commands/developer/premium.js
-const { addPremiumSubscription, removePremiumSubscription } = require('../../database/database');
-
-const parseDuration = (durationString) => {
-  const durationRegex = /(\d+)([mdy])/g;
-  let match;
-  const duration = {};
-
-  while ((match = durationRegex.exec(durationString)) !== null) {
-    const amount = parseInt(match[1]);
-    const unit = match[2];
-
-    switch (unit) {
-      case 'm':
-        duration.minutes = amount;
-        break;
-      case 'd':
-        duration.days = amount;
-        break;
-      case 'y':
-        duration.years = amount;
-        break;
-    }
-  }
-
-  return duration;
-};
+const { addPremiumSubscription, removePremiumSubscription, hasPremiumSubscription } = require('../../database/database');
+const { developerIDs } = require('../../config');
 
 module.exports = {
   name: 'premium',
-  description: 'Manages premium subscriptions (developer only)',
-  usage: '<add|remove> <user> [duration]',
+  description: 'Manages premium subscriptions',
+  usage: '<add|remove|check> <user> [duration]',
+  aliases: ['p'],
   permissions: [],
+  permissionLevel: ['developer'],
   execute: async (message, args) => {
-    const developerIDs = process.env.DEVELOPER_IDS.split(',');
     if (!developerIDs.includes(message.author.id)) {
-      return message.reply('This command is only available for developers.');
+      return message.channel.send('You do not have permission to use this command.');
     }
 
     const subcommand = args[0];
-    const userInput = args[1];
-    const durationString = args[2];
-
-    if (!subcommand || !userInput) {
-      return message.reply('Please provide a subcommand (add/remove) and a username, user ID, or user tag.');
-    }
-
-    let userId;
-    let user;
-
-    if (userInput.startsWith('<@') && userInput.endsWith('>')) {
-      userId = userInput.slice(2, -1);
-      if (userId.startsWith('!')) {
-        userId = userId.slice(1);
-      }
-      user = await message.client.users.fetch(userId).catch(() => null);
-    } else if (!isNaN(userInput)) {
-      userId = userInput;
-      user = await message.client.users.fetch(userId).catch(() => null);
-    } else {
-      user = message.client.users.cache.find((user) => user.username === userInput || user.tag === userInput);
-    }
-
-    if (!user) {
-      return message.reply('Invalid user. Please provide a valid user mention, ID, username, or tag.');
-    }
-
-    const member = await message.guild.members.fetch(user.id).catch(() => null);
-
-    if (!member) {
-      return message.reply('The specified user is not a member of this server.');
-    }
 
     if (subcommand === 'add') {
-      let duration = { days: 30 }; // Default duration of 30 days
+      const userInput = args[1];
+      const duration = args[2];
 
-      if (durationString) {
-        duration = parseDuration(durationString);
+      if (!userInput) {
+        return message.channel.send('Please provide a user tag or user ID to add the premium subscription to.');
       }
 
-      const endDate = new Date();
+      let user;
 
-      if (duration.minutes) {
-        endDate.setMinutes(endDate.getMinutes() + duration.minutes);
-      }
-      if (duration.days) {
-        endDate.setDate(endDate.getDate() + duration.days);
-      }
-      if (duration.years) {
-        endDate.setFullYear(endDate.getFullYear() + duration.years);
+      if (userInput.startsWith('<@') && userInput.endsWith('>')) {
+        const userId = userInput.slice(2, -1);
+        user = await message.client.users.fetch(userId);
+      } else {
+        user = message.client.users.cache.find((u) => u.username === userInput || u.tag === userInput);
       }
 
-      await addPremiumSubscription(userId, endDate);
+      if (!user) {
+        return message.channel.send('Invalid user tag or user ID. Please provide a valid user.');
+      }
 
-      message.reply(`Added <@${userId}> to premium until ${endDate.toISOString().slice(0, 10)}.`);
+      const existingSubscription = await hasPremiumSubscription(user.id);
+      if (existingSubscription) {
+        return message.channel.send(`${user.tag} (ID: ${user.id}) already has an active premium subscription.`);
+      }
+
+      let endDate = null;
+      if (duration) {
+        endDate = new Date();
+        endDate.setDate(endDate.getDate() + parseInt(duration));
+      }
+
+      try {
+        await addPremiumSubscription(user.id, endDate);
+        if (endDate) {
+          message.channel.send(`Premium subscription added for ${user.tag} (ID: ${user.id}) with duration ${duration} days.`);
+        } else {
+          message.channel.send(`Permanent premium subscription added for ${user.tag} (ID: ${user.id}).`);
+        }
+      } catch (error) {
+        console.error('Error adding premium subscription:', error);
+        message.channel.send('An error occurred while adding the premium subscription.');
+      }
     } else if (subcommand === 'remove') {
-      await removePremiumSubscription(userId);
+      const userInput = args[1];
 
-      message.reply(`Removed <@${userId}> from premium.`);
+      if (!userInput) {
+        return message.channel.send('Please provide a user tag or user ID to remove the premium subscription from.');
+      }
+
+      let user;
+
+      if (userInput.startsWith('<@') && userInput.endsWith('>')) {
+        const userId = userInput.slice(2, -1);
+        user = await message.client.users.fetch(userId);
+      } else {
+        user = message.client.users.cache.find((u) => u.username === userInput || u.tag === userInput);
+      }
+
+      if (!user) {
+        return message.channel.send('Invalid user tag or user ID. Please provide a valid user.');
+      }
+
+      try {
+        await removePremiumSubscription(user.id);
+        message.channel.send(`Premium subscription removed for ${user.tag} (ID: ${user.id}).`);
+      } catch (error) {
+        console.error('Error removing premium subscription:', error);
+        message.channel.send('An error occurred while removing the premium subscription.');
+      }
+    } else if (subcommand === 'check') {
+      const userInput = args[1];
+
+      if (!userInput) {
+        return message.channel.send('Please provide a user tag or user ID to check the premium subscription for.');
+      }
+
+      let user;
+
+      if (userInput.startsWith('<@') && userInput.endsWith('>')) {
+        const userId = userInput.slice(2, -1);
+        user = await message.client.users.fetch(userId);
+      } else {
+        user = message.client.users.cache.find((u) => u.username === userInput || u.tag === userInput);
+      }
+
+      if (!user) {
+        return message.channel.send('Invalid user tag or user ID. Please provide a valid user.');
+      }
+
+      const hasPremium = await hasPremiumSubscription(user.id);
+
+      if (hasPremium) {
+        message.channel.send(`${user.tag} (ID: ${user.id}) has an active premium subscription.`);
+      } else {
+        message.channel.send(`${user.tag} (ID: ${user.id}) does not have an active premium subscription.`);
+      }
     } else {
-      message.reply('Invalid subcommand. Please use "add" or "remove".');
+      message.channel.send('Invalid subcommand. Please use "add", "remove", or "check".');
     }
   },
   data: {
     name: 'premium',
-    description: 'Manages premium subscriptions (developer only)',
+    description: 'Manages premium subscriptions',
     options: [
       {
         name: 'add',
         type: 1, // SUB_COMMAND
-        description: 'Adds a user to premium subscription',
+        description: 'Adds a premium subscription to a user',
         options: [
           {
             name: 'user',
             type: 3, // STRING
-            description: 'The username, user ID, or user tag of the user to add to premium',
+            description: 'The user tag or user ID to add the premium subscription to',
             required: true,
           },
           {
             name: 'duration',
             type: 3, // STRING
-            description: 'The duration of the premium subscription (e.g., 1m2d3y)',
+            description: 'The duration of the premium subscription in days (optional)',
             required: false,
           },
         ],
@@ -127,12 +143,25 @@ module.exports = {
       {
         name: 'remove',
         type: 1, // SUB_COMMAND
-        description: 'Removes a user from premium subscription',
+        description: 'Removes a premium subscription from a user',
         options: [
           {
             name: 'user',
             type: 3, // STRING
-            description: 'The username, user ID, or user tag of the user to remove from premium',
+            description: 'The user tag or user ID to remove the premium subscription from',
+            required: true,
+          },
+        ],
+      },
+      {
+        name: 'check',
+        type: 1, // SUB_COMMAND
+        description: 'Checks if a user has an active premium subscription',
+        options: [
+          {
+            name: 'user',
+            type: 3, // STRING
+            description: 'The user tag or user ID to check the premium subscription for',
             required: true,
           },
         ],
@@ -140,67 +169,97 @@ module.exports = {
     ],
   },
   executeSlash: async (interaction) => {
-    const developerIDs = process.env.DEVELOPER_IDS.split(',');
     if (!developerIDs.includes(interaction.user.id)) {
-      return interaction.reply({ content: 'This command is only available for developers.', ephemeral: true });
+      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
     const subcommand = interaction.options.getSubcommand();
-    const userInput = interaction.options.getString('user');
-    const durationString = interaction.options.getString('duration');
-
-    let userId;
-    let user;
-
-    if (userInput.startsWith('<@') && userInput.endsWith('>')) {
-      userId = userInput.slice(2, -1);
-      if (userId.startsWith('!')) {
-        userId = userId.slice(1);
-      }
-      user = await interaction.client.users.fetch(userId).catch(() => null);
-    } else if (!isNaN(userInput)) {
-      userId = userInput;
-      user = await interaction.client.users.fetch(userId).catch(() => null);
-    } else {
-      user = interaction.client.users.cache.find((user) => user.username === userInput || user.tag === userInput);
-    }
-
-    if (!user) {
-      return interaction.reply({ content: 'Invalid user. Please provide a valid user mention, ID, username, or tag.', ephemeral: true });
-    }
-
-    const member = await interaction.guild.members.fetch(user.id).catch(() => null);
-
-    if (!member) {
-      return interaction.reply({ content: 'The specified user is not a member of this server.', ephemeral: true });
-    }
 
     if (subcommand === 'add') {
-      let duration = { days: 30 }; // Default duration of 30 days
+      const userInput = interaction.options.getString('user');
+      const duration = interaction.options.getString('duration');
 
-      if (durationString) {
-        duration = parseDuration(durationString);
+      let user;
+
+      if (userInput.startsWith('<@') && userInput.endsWith('>')) {
+        const userId = userInput.slice(2, -1);
+        user = await interaction.client.users.fetch(userId);
+      } else {
+        user = interaction.client.users.cache.find((u) => u.username === userInput || u.tag === userInput);
       }
 
-      const endDate = new Date();
-
-      if (duration.minutes) {
-        endDate.setMinutes(endDate.getMinutes() + duration.minutes);
-      }
-      if (duration.days) {
-        endDate.setDate(endDate.getDate() + duration.days);
-      }
-      if (duration.years) {
-        endDate.setFullYear(endDate.getFullYear() + duration.years);
+      if (!user) {
+        return interaction.channel.send('Invalid user tag or user ID. Please provide a valid user.');
       }
 
-      await addPremiumSubscription(userId, endDate);
+      const existingSubscription = await hasPremiumSubscription(user.id);
+      if (existingSubscription) {
+        return interaction.channel.send(`${user.tag} (ID: ${user.id}) already has an active premium subscription.`);
+      }
 
-      interaction.reply(`Added <@${userId}> to premium until ${endDate.toISOString().slice(0, 10)}.`);
+      let endDate = null;
+      if (duration) {
+        endDate = new Date();
+        endDate.setDate(endDate.getDate() + parseInt(duration));
+      }
+
+      try {
+        await addPremiumSubscription(user.id, endDate);
+        if (endDate) {
+          interaction.channel.send(`Premium subscription added for ${user.tag} (ID: ${user.id}) with duration ${duration} days.`);
+        } else {
+          interaction.channel.send(`Permanent premium subscription added for ${user.tag} (ID: ${user.id}).`);
+        }
+      } catch (error) {
+        console.error('Error adding premium subscription:', error);
+        interaction.channel.send('An error occurred while adding the premium subscription.');
+      }
     } else if (subcommand === 'remove') {
-      await removePremiumSubscription(userId);
+      const userInput = interaction.options.getString('user');
 
-      interaction.reply(`Removed <@${userId}> from premium.`);
+      let user;
+
+      if (userInput.startsWith('<@') && userInput.endsWith('>')) {
+        const userId = userInput.slice(2, -1);
+        user = await interaction.client.users.fetch(userId);
+      } else {
+        user = interaction.client.users.cache.find((u) => u.username === userInput || u.tag === userInput);
+      }
+
+      if (!user) {
+        return interaction.channel.send('Invalid user tag or user ID. Please provide a valid user.');
+      }
+
+      try {
+        await removePremiumSubscription(user.id);
+        interaction.channel.send(`Premium subscription removed for ${user.tag} (ID: ${user.id}).`);
+      } catch (error) {
+        console.error('Error removing premium subscription:', error);
+        interaction.channel.send('An error occurred while removing the premium subscription.');
+      }
+    } else if (subcommand === 'check') {
+      const userInput = interaction.options.getString('user');
+
+      let user;
+
+      if (userInput.startsWith('<@') && userInput.endsWith('>')) {
+        const userId = userInput.slice(2, -1);
+        user = await interaction.client.users.fetch(userId);
+      } else {
+        user = interaction.client.users.cache.find((u) => u.username === userInput || u.tag === userInput);
+      }
+
+      if (!user) {
+        return interaction.channel.send('Invalid user tag or user ID. Please provide a valid user.');
+      }
+
+      const hasPremium = await hasPremiumSubscription(user.id);
+
+      if (hasPremium) {
+        interaction.channel.send(`${user.tag} (ID: ${user.id}) has an active premium subscription.`);
+      } else {
+        interaction.channel.send(`${user.tag} (ID: ${user.id}) does not have an active premium subscription.`);
+      }
     }
   },
 };

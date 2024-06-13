@@ -17,7 +17,6 @@ class CommandHandler {
   loadCommands(commandsPath) {
     const commandFiles = this.getCommandFiles(commandsPath);
 
-
     for (const filePath of commandFiles) {
       const command = require(filePath);
       if (command.data) {
@@ -25,9 +24,18 @@ class CommandHandler {
       }
       if (command.name) {
         this.commands[command.name] = command;
+        if (command.aliases) {
+          command.aliases.forEach((alias) => {
+            if (!this.commands[alias]) {
+              this.commands[alias] = command;
+            } else {
+              const conflictingCommand = this.commands[alias];
+              console.warn(`Alias "${alias}" for command "${command.name}" conflicts with command "${conflictingCommand.name}". Skipping...`);
+            }
+          });
+        }
       }
     }
-
   }
 
   getCommandFiles(directory) {

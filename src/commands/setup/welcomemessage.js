@@ -16,40 +16,40 @@ module.exports = {
 
     if (subcommand === 'set') {
       if (!welcomeMessage) {
-        return message.reply('Please provide a welcome message.');
+        return message.channel.send('Please provide a welcome message.');
       }
 
       try {
         await setWelcomeMessage(message.guild.id, welcomeMessage);
         const replacedMessage = replacePlaceholders(message.member, welcomeMessage);
-        message.reply(`Welcome message set to "${replacedMessage}".`);
+        message.channel.send(`Welcome message set to "${replacedMessage}".`);
       } catch (error) {
         console.error('Error setting welcome message:', error);
-        message.reply('An error occurred while setting the welcome message.');
+        message.channel.send('An error occurred while setting the welcome message.');
       }
     } else if (subcommand === 'remove') {
       try {
         await setWelcomeMessage(message.guild.id, null);
-        message.reply('Welcome message removed.');
+        message.channel.send('Welcome message removed.');
       } catch (error) {
         console.error('Error removing welcome message:', error);
-        message.reply('An error occurred while removing the welcome message.');
+        message.channel.send('An error occurred while removing the welcome message.');
       }
     } else if (subcommand === 'channel') {
       const channelId = args[1];
       if (!channelId) {
-        return message.reply('Please provide a channel ID.');
+        return message.channel.send('Please provide a channel ID.');
       }
 
       try {
         await setWelcomeChannelId(message.guild.id, channelId);
-        message.reply(`Welcome channel set to <#${channelId}>.`);
+        message.channel.send(`Welcome channel set to <#${channelId}>.`);
       } catch (error) {
         console.error('Error setting welcome channel:', error);
-        message.reply('An error occurred while setting the welcome channel.');
+        message.channel.send('An error occurred while setting the welcome channel.');
       }
     } else {
-      message.reply('Invalid subcommand. Please use "set", "remove", or "channel".');
+      message.channel.send('Invalid subcommand. Please use "set", "remove", or "channel".');
     }
   },
   data: {

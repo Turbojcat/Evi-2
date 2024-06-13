@@ -1,8 +1,8 @@
 // src/evi.js
-const { Client, GatewayIntentBits, ActivityType, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, ActivityType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord.js');
-const { token, suggestionChannelId } = require('./config');
+const { token, suggestionChannelId, approvedSuggestionChannelId, deniedSuggestionChannelId } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
 const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, createUserProfilesTable } = require('./database/database');
@@ -11,7 +11,12 @@ const { createWelcomeLeaveTable, getWelcomeMessage, getLeaveMessage } = require(
 const { replacePlaceholders } = require('./placeholders');
 const { createAdminModRolesTable } = require('./database/adminModRoles');
 const { createSuggestionTable } = require('./database/suggestiondb');
-const { getNewSuggestions, markSuggestionAsSent } = require('./database/suggestiondb');
+const { getNewSuggestions, markSuggestionAsSent, updateSuggestionStatus } = require('./database/suggestiondb');
+const { getReactionRoles } = require('./database/reactionroledb');
+const { createAutoRoleTable } = require('./database/autoroledb');
+const { getAutoRoles } = require('./database/autoroledb');
+const { createEconomyTable, createEcoSettingsTable } = require('./database/ecodb');
+
 
 const client = new Client({
   intents: [
@@ -20,6 +25,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildPresences,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessageReactions,
   ],
 });
 
@@ -59,17 +65,32 @@ async function sendSuggestionsToEvi(client) {
   for (const suggestion of newSuggestions) {
     const { id, user_id, guild_id, suggestion: suggestionText } = suggestion;
 
+    const guild = client.guilds.cache.get(guild_id);
+    const user = await client.users.fetch(user_id);
+
     const embed = new EmbedBuilder()
       .setTitle('New Suggestion')
       .setDescription(suggestionText)
       .addFields(
-        { name: 'User ID', value: user_id },
-        { name: 'Guild ID', value: guild_id }
+        { name: 'Server', value: guild ? `${guild.name} (${guild.id})` : 'Unknown' },
+        { name: 'User', value: user ? `${user.tag} (${user.id})` : 'Unknown' }
       )
       .setTimestamp();
 
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`approve_${id}`)
+          .setLabel('Approve')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(`deny_${id}`)
+          .setLabel('Deny')
+          .setStyle(ButtonStyle.Danger)
+      );
+
     try {
-      await suggestionChannel.send({ embeds: [embed] });
+      await suggestionChannel.send({ embeds: [embed], components: [row] });
       await markSuggestionAsSent(id);
     } catch (error) {
       console.error('Error sending suggestion to Evi\'s server:', error);
@@ -87,6 +108,10 @@ client.once('ready', () => {
   createWelcomeLeaveTable();
   createAdminModRolesTable();
   createSuggestionTable();
+  createAutoRoleTable();
+  createEconomyTable();
+  createEcoSettingsTable();
+
 
   const { commandCount, aliasCount } = commandHandler.getCommandStats();
   console.log(`${client.user.tag} (${client.user.id}) is ready with ${commandCount} commands and ${aliasCount} aliases, serving ${client.guilds.cache.size} servers and ${client.users.cache.size} users!`);
@@ -107,7 +132,13 @@ client.once('ready', () => {
 
   setInterval(() => {
     sendSuggestionsToEvi(client);
-  }, 60000); // Check for new suggestions every minute
+  }, 30 * 1000); // Check for new suggestions every 30 seconds
+  
+
+  /*setInterval(() => {
+    sendSuggestionsToEvi(client);
+  }, 24 * 60 * 60 * 1000); // Check for new suggestions every 24 hours
+  */ 
 });
 
 client.on('messageCreate', (message) => {
@@ -116,9 +147,63 @@ client.on('messageCreate', (message) => {
 });
 
 client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isCommand()) return;
-  commandHandler.handleSlashCommand(interaction);
+  if (interaction.isCommand()) {
+    commandHandler.handleSlashCommand(interaction);
+  } else if (interaction.isButton()) {
+    const [action, suggestionId] = interaction.customId.split('_');
+
+    if (action === 'approve') {
+      const suggestionChannel = client.channels.cache.get(suggestionChannelId);
+      const approvedChannel = client.channels.cache.get(approvedSuggestionChannelId);
+
+      if (suggestionChannel && approvedChannel) {
+        try {
+          const suggestionMessage = await suggestionChannel.messages.fetch(interaction.message.id);
+          const suggestionEmbed = suggestionMessage.embeds[0];
+
+          const approvedEmbed = new EmbedBuilder()
+            .setTitle('Approved Suggestion')
+            .setDescription(suggestionEmbed.description)
+            .setTimestamp();
+
+          await updateSuggestionStatus(suggestionId, 'approved');
+          await approvedChannel.send({ embeds: [approvedEmbed] });
+          await interaction.update({ components: [] });
+        } catch (error) {
+          console.error('Error handling suggestion approval:', error);
+          await interaction.reply({ content: 'An error occurred while approving the suggestion. Please try again later.', ephemeral: true });
+        }
+      } else {
+        await interaction.reply({ content: 'The suggestion or approved channel is not configured properly. Please contact an administrator.', ephemeral: true });
+      }
+    } else if (action === 'deny') {
+      const suggestionChannel = client.channels.cache.get(suggestionChannelId);
+      const deniedChannel = client.channels.cache.get(deniedSuggestionChannelId);
+
+      if (suggestionChannel && deniedChannel) {
+        try {
+          const suggestionMessage = await suggestionChannel.messages.fetch(interaction.message.id);
+          const suggestionEmbed = suggestionMessage.embeds[0];
+
+          const deniedEmbed = new EmbedBuilder()
+            .setTitle('Denied Suggestion')
+            .setDescription(suggestionEmbed.description)
+            .setTimestamp();
+
+          await updateSuggestionStatus(suggestionId, 'denied');
+          await deniedChannel.send({ embeds: [deniedEmbed] });
+          await interaction.update({ components: [] });
+        } catch (error) {
+          console.error('Error handling suggestion denial:', error);
+          await interaction.reply({ content: 'An error occurred while denying the suggestion. Please try again later.', ephemeral: true });
+        }
+      } else {
+        await interaction.reply({ content: 'The suggestion or denied channel is not configured properly. Please contact an administrator.', ephemeral: true });
+      }
+    }
+  }
 });
+
 
 client.on('guildMemberAdd', async (member) => {
   const guildId = member.guild.id;
@@ -129,6 +214,21 @@ client.on('guildMemberAdd', async (member) => {
     const welcomeChannel = member.guild.channels.cache.find(channel => channel.name === 'welcome');
     if (welcomeChannel) {
       welcomeChannel.send(replacedMessage);
+    }
+  }
+
+  const autoRoles = await getAutoRoles(member.guild.id);
+  for (const autoRole of autoRoles) {
+    const role = member.guild.roles.cache.get(autoRole.role_id);
+    if (role) {
+      if (autoRole.duration) {
+        await member.roles.add(role, `Autorole for ${autoRole.duration}ms`);
+        setTimeout(() => {
+          member.roles.remove(role, 'Autorole duration expired');
+        }, autoRole.duration);
+      } else {
+        await member.roles.add(role, 'Permanent autorole');
+      }
     }
   }
 });
@@ -146,16 +246,80 @@ client.on('guildMemberRemove', async (member) => {
   }
 });
 
+client.on('messageReactionAdd', async (reaction, user) => {
+  console.log('messageReactionAdd event triggered');
+
+  if (user.bot) return;
+
+  const { message } = reaction;
+  const { guild } = message;
+
+  console.log('Guild ID:', guild.id);
+  console.log('Message ID:', message.id);
+  const reactionRoles = await getReactionRoles(guild.id, message.id);
+  console.log('Reaction Emoji:', reaction.emoji.name);
+  let emojiIdentifier = reaction.emoji.name;
+  if (reaction.emoji.id) {
+    emojiIdentifier = reaction.emoji.id;
+  }
+  const reactionRole = reactionRoles.find(rr => rr.emoji === emojiIdentifier);
+
+  console.log('Reaction Role:', reactionRole);
+
+  if (reactionRole) {
+    const member = await guild.members.fetch(user.id);
+    console.log('Member:', member);
+
+    const role = guild.roles.cache.get(reactionRole.role_id);
+    console.log('Role:', role);
+
+    if (role && member) {
+      await member.roles.add(role);
+    }
+  }
+});
+
+client.on('messageReactionRemove', async (reaction, user) => {
+  console.log('messageReactionRemove event triggered');
+
+  if (user.bot) return;
+
+  const { message } = reaction;
+  const { guild } = message;
+
+  console.log('Guild ID:', guild.id);
+  console.log('Message ID:', message.id);
+  const reactionRoles = await getReactionRoles(guild.id, message.id);
+  console.log('Reaction Emoji:', reaction.emoji.name);
+  let emojiIdentifier = reaction.emoji.name;
+  if (reaction.emoji.id) {
+    emojiIdentifier = reaction.emoji.id;
+  }
+  const reactionRole = reactionRoles.find(rr => rr.emoji === emojiIdentifier);
+
+  console.log('Reaction Role:', reactionRole);
+
+  if (reactionRole) {
+    const member = await guild.members.fetch(user.id);
+    console.log('Member:', member);
+
+    const role = guild.roles.cache.get(reactionRole.role_id);
+    console.log('Role:', role);
+
+    if (role && member) {
+      await member.roles.remove(role);
+    }
+  }
+});
+
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
   const oldPremiumStatus = await hasPremiumSubscription(oldMember.id);
   const newPremiumStatus = await hasPremiumSubscription(newMember.id);
 
   if (!oldPremiumStatus && newPremiumStatus) {
     // Perform actions for premium subscription activation
-    // ...
   } else if (oldPremiumStatus && !newPremiumStatus) {
     // Perform actions for premium subscription deactivation
-    // ...
   }
 });
 

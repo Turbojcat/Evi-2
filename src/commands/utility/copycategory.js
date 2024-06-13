@@ -12,34 +12,30 @@ module.exports = {
   execute: async (message, args) => {
     const isPremium = await hasPremiumSubscription(message.author.id);
     if (!isPremium) {
-      return message.reply('This command is only available for premium users.');
+      return message.channel.send('This command is only available for premium users.');
     }
 
     const sourceCategoryId = args[0];
-    console.log('Source Category ID:', sourceCategoryId);
 
     if (!sourceCategoryId) {
-      return message.reply('Please provide the source category ID.');
+      return message.channel.send('Please provide the source category ID.');
     }
 
     const sourceCategory = message.guild.channels.cache.get(sourceCategoryId);
-    console.log('Source Category (get):', sourceCategory);
 
     const categories = message.guild.channels.cache.filter(channel => channel.type === 'GUILD_CATEGORY');
-    console.log('Categories:', categories.map(category => ({ id: category.id, name: category.name })));
 
     if (!sourceCategory) {
-      return message.reply('Invalid source category ID. Please provide a valid category ID.');
+      return message.channel.send('Invalid source category ID. Please provide a valid category ID.');
     }
 
-    console.log('Source Category Name:', sourceCategory.name);
 
     try {
       const newCategory = await sourceCategory.clone();
-      message.reply(`New category "${newCategory.name}" created with the same permissions as "${sourceCategory.name}".`);
+      message.channel.send(`New category "${newCategory.name}" created with the same permissions as "${sourceCategory.name}".`);
     } catch (error) {
       console.error('Error creating category:', error);
-      message.reply('An error occurred while creating the category. Please check the provided category ID and try again.');
+      message.channel.send('An error occurred while creating the category. Please check the provided category ID and try again.');
     }
   },
   data: {

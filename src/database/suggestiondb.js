@@ -1,8 +1,9 @@
 // src/database/suggestion.js
 const { pool } = require('./database');
 
+// src/database/suggestiondb.js
 const createSuggestionTable = () => {
-  const sql = `
+  const createTableSql = `
     CREATE TABLE IF NOT EXISTS suggestions (
       id INT AUTO_INCREMENT PRIMARY KEY,
       user_id VARCHAR(255) NOT NULL,
@@ -13,14 +14,26 @@ const createSuggestionTable = () => {
     )
   `;
 
-  pool.query(sql, (error) => {
-    if (error) {
-      console.error('Error creating suggestions table:', error);
+  pool.query(createTableSql, (createTableError) => {
+    if (createTableError) {
+      console.error('Error creating suggestions table:', createTableError);
     } else {
-      console.log('suggestions table created successfully');
+      const alterTableSql = `
+        ALTER TABLE suggestions
+        ADD COLUMN IF NOT EXISTS status VARCHAR(255) DEFAULT 'pending'
+      `;
+
+      pool.query(alterTableSql, (alterTableError) => {
+        if (alterTableError) {
+          console.error('Error adding status column to suggestions table:', alterTableError);
+        } else {
+        }
+      });
     }
   });
 };
+
+
 
 const createSuggestion = (userId, guildId, suggestion) => {
   return new Promise((resolve, reject) => {
@@ -123,6 +136,23 @@ const removeSuggestionBlacklist = (userId) => {
   });
 };
 
+const updateSuggestionStatus = (suggestionId, status) => {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      'UPDATE suggestions SET status = ? WHERE id = ?',
+      [status, suggestionId],
+      (error) => {
+        if (error) {
+          console.error('Error updating suggestion status:', error);
+          reject(error);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+};
+
 module.exports = {
   createSuggestionTable,
   createSuggestion,
@@ -131,4 +161,5 @@ module.exports = {
   isSuggestionBlacklisted,
   addSuggestionBlacklist,
   removeSuggestionBlacklist,
+  updateSuggestionStatus,
 };

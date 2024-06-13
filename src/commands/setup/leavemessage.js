@@ -16,40 +16,40 @@ module.exports = {
 
     if (subcommand === 'set') {
       if (!leaveMessage) {
-        return message.reply('Please provide a leave message.');
+        return message.channel.send('Please provide a leave message.');
       }
 
       try {
         await setLeaveMessage(message.guild.id, leaveMessage);
         const replacedMessage = replacePlaceholders(message.member, leaveMessage);
-        message.reply(`Leave message set to "${replacedMessage}".`);
+        message.channel.send(`Leave message set to "${replacedMessage}".`);
       } catch (error) {
         console.error('Error setting leave message:', error);
-        message.reply('An error occurred while setting the leave message.');
+        message.channel.send('An error occurred while setting the leave message.');
       }
     } else if (subcommand === 'remove') {
       try {
         await setLeaveMessage(message.guild.id, null);
-        message.reply('Leave message removed.');
+        message.channel.send('Leave message removed.');
       } catch (error) {
         console.error('Error removing leave message:', error);
-        message.reply('An error occurred while removing the leave message.');
+        message.channel.send('An error occurred while removing the leave message.');
       }
     } else if (subcommand === 'channel') {
       const channelId = args[1];
       if (!channelId) {
-        return message.reply('Please provide a channel ID.');
+        return message.channel.send('Please provide a channel ID.');
       }
 
       try {
         await setLeaveChannelId(message.guild.id, channelId);
-        message.reply(`Leave channel set to <#${channelId}>.`);
+        message.channel.send(`Leave channel set to <#${channelId}>.`);
       } catch (error) {
         console.error('Error setting leave channel:', error);
-        message.reply('An error occurred while setting the leave channel.');
+        message.channel.send('An error occurred while setting the leave channel.');
       }
     } else {
-      message.reply('Invalid subcommand. Please use "set", "remove", or "channel".');
+      message.channel.send('Invalid subcommand. Please use "set", "remove", or "channel".');
     }
   },
   data: {

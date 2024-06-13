@@ -1,12 +1,11 @@
 // src/commands/economy/balanceremove.js
-
-const { removeBalance } = require('../../database/database');
+const { removeBalance, getEcoSetting } = require('../../database/ecodb');
 
 module.exports = {
   name: 'balanceremove',
-  description: 'Remove balance from a user',
+  description: 'Removes balance from a user\'s account',
   usage: '<user> <amount>',
-  aliases: ['balremove'],
+  aliases: ['removebal'],
   permissions: ['MANAGE_GUILD'],
   permissionLevel: ['admin'],
   execute: async (message, args) => {
@@ -14,15 +13,21 @@ module.exports = {
     const amount = parseFloat(args[1]);
 
     if (!user || isNaN(amount)) {
-      return message.reply('Please provide a valid user and amount.');
+      return message.channel.send('Please provide a valid user and amount.');
     }
 
-    await removeBalance(message.guild.id, user.id, amount);
-    message.reply(`${amount} Evi :coin: removed from ${user}`);
+    try {
+      await removeBalance(message.guild.id, user.id, amount);
+      const coinSymbol = await getEcoSetting(message.guild.id, 'coinSymbol', '💰');
+      message.channel.send(`Removed ${amount} ${coinSymbol} from ${user}'s balance.`);
+    } catch (error) {
+      console.error('Error removing balance:', error);
+      message.channel.send('An error occurred while removing balance.');
+    }
   },
   data: {
     name: 'balanceremove',
-    description: 'Remove balance from a user',
+    description: 'Removes balance from a user\'s account',
     options: [
       {
         name: 'user',
@@ -33,7 +38,7 @@ module.exports = {
       {
         name: 'amount',
         type: 10, // NUMBER
-        description: 'The amount to remove',
+        description: 'The amount to remove from the balance',
         required: true,
       },
     ],
@@ -42,7 +47,13 @@ module.exports = {
     const user = interaction.options.getUser('user');
     const amount = interaction.options.getNumber('amount');
 
-    await removeBalance(interaction.guild.id, user.id, amount);
-    interaction.reply(`${amount} Evi :coin: removed from ${user}`);
+    try {
+      await removeBalance(interaction.guild.id, user.id, amount);
+      const coinSymbol = await getEcoSetting(interaction.guild.id, 'coinSymbol', '💰');
+      interaction.followUp(`Removed ${amount} ${coinSymbol} from ${user}'s balance.`);
+    } catch (error) {
+      console.error('Error removing balance:', error);
+      interaction.followUp('An error occurred while removing balance.');
+    }
   },
 };

@@ -5,7 +5,7 @@ module.exports = {
   name: 'administratorrole',
   description: 'Manages the administrator roles for the server',
   usage: '<add|remove|list> [role]',
-  aliases: ['adminrole', 'ar'],
+  aliases: ['adminrole', 'adr'],
   permissions: ['MANAGE_GUILD'],
   permissionLevel: ['admin'],
   execute: async (message, args) => {
@@ -14,7 +14,7 @@ module.exports = {
 
     if (subcommand === 'add') {
       if (!roleInput) {
-        return message.reply('Please provide a role to add as an administrator role.');
+        return message.channel.send('Please provide a role to add as an administrator role.');
       }
 
       let roleId;
@@ -30,14 +30,14 @@ module.exports = {
       }
 
       if (!roleId) {
-        return message.reply('Invalid role. Please provide a valid role mention, ID, or name.');
+        return message.channel.send('Invalid role. Please provide a valid role mention, ID, or name.');
       }
 
       await setAdminRole(message.guild.id, roleId);
-      message.reply(`Added <@&${roleId}> as an administrator role.`);
+      message.channel.send(`Added <@&${roleId}> as an administrator role.`);
     } else if (subcommand === 'remove') {
       if (!roleInput) {
-        return message.reply('Please provide a role to remove from administrator roles.');
+        return message.channel.send('Please provide a role to remove from administrator roles.');
       }
 
       let roleId;
@@ -53,22 +53,22 @@ module.exports = {
       }
 
       if (!roleId) {
-        return message.reply('Invalid role. Please provide a valid role mention, ID, or name.');
+        return message.channel.send('Invalid role. Please provide a valid role mention, ID, or name.');
       }
 
       await removeAdminRole(message.guild.id, roleId);
-      message.reply(`Removed <@&${roleId}> from administrator roles.`);
+      message.channel.send(`Removed <@&${roleId}> from administrator roles.`);
     } else if (subcommand === 'list') {
       const adminRoles = await getAdminRoles(message.guild.id);
 
       if (adminRoles.length === 0) {
-        message.reply('There are no administrator roles set.');
+        message.channel.send('There are no administrator roles set.');
       } else {
         const roleList = adminRoles.map(roleId => `<@&${roleId}>`).join(', ');
-        message.reply(`Current administrator roles: ${roleList}`);
+        message.channel.send(`Current administrator roles: ${roleList}`);
       }
     } else {
-      message.reply('Invalid subcommand. Please use "add", "remove", or "list".');
+      message.channel.send('Invalid subcommand. Please use "add", "remove", or "list".');
     }
   },
   data: {

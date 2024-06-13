@@ -6,13 +6,12 @@ module.exports = {
   aliases: ['sim'],
   permissions: ['MANAGE_GUILD'],
   permissionLevel: ['moderator'],
-  premium: true,
   execute: async (message, args) => {
     const subcommand = args[0];
-    const userInput = args[1];
+    const userInput = args.slice(1).join(' ');
 
     if (!subcommand || !userInput) {
-      return;
+      return message.channel.send('Please provide a valid subcommand (join/leave) and user.');
     }
 
     let user;
@@ -21,17 +20,27 @@ module.exports = {
       const userId = userInput.slice(2, -1);
       user = await message.client.users.fetch(userId);
     } else {
-      user = message.client.users.cache.find((u) => u.username === userInput || u.tag === userInput);
+      const member = message.guild.members.cache.find(
+        (member) =>
+          member.user.username.toLowerCase() === userInput.toLowerCase() ||
+          member.user.tag.toLowerCase() === userInput.toLowerCase() ||
+          member.id === userInput
+      );
+      if (member) {
+        user = member.user;
+      }
     }
 
     if (!user) {
-      return;
+      return message.channel.send('Invalid user. Please provide a valid user mention, username, tag, or ID.');
     }
 
     if (subcommand === 'join') {
       message.client.emit('guildMemberAdd', message.guild.members.cache.get(user.id) || await message.guild.members.fetch(user.id));
+      message.channel.send(`Simulated ${user.tag} joining the server.`);
     } else if (subcommand === 'leave') {
       message.client.emit('guildMemberRemove', message.guild.members.cache.get(user.id) || await message.guild.members.fetch(user.id));
+      message.channel.send(`Simulated ${user.tag} leaving the server.`);
     }
   },
   data: {
@@ -76,17 +85,27 @@ module.exports = {
       const userId = userInput.slice(2, -1);
       user = await interaction.client.users.fetch(userId);
     } else {
-      user = interaction.client.users.cache.find((u) => u.username === userInput || u.tag === userInput);
+      const member = interaction.guild.members.cache.find(
+        (member) =>
+          member.user.username.toLowerCase() === userInput.toLowerCase() ||
+          member.user.tag.toLowerCase() === userInput.toLowerCase() ||
+          member.id === userInput
+      );
+      if (member) {
+        user = member.user;
+      }
     }
 
     if (!user) {
-      return;
+      return interaction.reply({ content: 'Invalid user. Please provide a valid user mention, username, tag, or ID.', ephemeral: true });
     }
 
     if (subcommand === 'join') {
       interaction.client.emit('guildMemberAdd', interaction.guild.members.cache.get(user.id) || await interaction.guild.members.fetch(user.id));
+      interaction.reply(`Simulated ${user.tag} joining the server.`);
     } else if (subcommand === 'leave') {
       interaction.client.emit('guildMemberRemove', interaction.guild.members.cache.get(user.id) || await interaction.guild.members.fetch(user.id));
+      interaction.reply(`Simulated ${user.tag} leaving the server.`);
     }
   },
 };

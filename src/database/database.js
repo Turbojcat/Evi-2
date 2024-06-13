@@ -69,21 +69,6 @@ const setupDatabase = () => {
     }
   );
 
-  pool.query(
-    `CREATE TABLE IF NOT EXISTS economy (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      guildId VARCHAR(255) NOT NULL,
-      userId VARCHAR(255) NOT NULL,
-      balance DECIMAL(10, 2) NOT NULL DEFAULT 0,
-      UNIQUE KEY unique_user_balance (guildId, userId)
-    )`,
-    (err, results) => {
-      if (err) {
-        console.error('Error during economy table creation:', err);
-        return;
-      }
-    }
-  );
 
   pool.query(
     `CREATE TABLE IF NOT EXISTS custom_commands (
@@ -148,7 +133,7 @@ const hasPremiumSubscription = (userId) => {
 
 const addPremiumSubscription = (userId, endDate) => {
   return new Promise((resolve, reject) => {
-    const query = 'INSERT INTO premium_subscriptions (userId, endDate) VALUES (?, ?)';
+    const query = 'INSERT INTO premium_subscriptions (userId, endDate) VALUES (?, ?) ON DUPLICATE KEY UPDATE endDate = VALUES(endDate)';
     pool.query(query, [userId, endDate], (err) => {
       if (err) {
         console.error('Error adding premium subscription:', err);
@@ -159,6 +144,7 @@ const addPremiumSubscription = (userId, endDate) => {
     });
   });
 };
+
 
 const removePremiumSubscription = (userId) => {
   return new Promise((resolve, reject) => {
@@ -237,75 +223,6 @@ const getStoryChannels = () => {
           reject(err);
         } else {
           resolve(results);
-        }
-      }
-    );
-  });
-};
-
-const getBalance = (guildId, userId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT balance FROM economy WHERE guildId = ? AND userId = ?',
-      [guildId, userId],
-      (err, results) => {
-        if (err) {
-          console.error('Error getting balance:', err);
-          reject(err);
-        } else {
-          const balance = results.length > 0 ? results[0].balance : 0;
-          resolve(balance);
-        }
-      }
-    );
-  });
-};
-
-const setBalance = (guildId, userId, balance) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'INSERT INTO economy (guildId, userId, balance) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance)',
-      [guildId, userId, balance],
-      (err) => {
-        if (err) {
-          console.error('Error setting balance:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const addBalance = (guildId, userId, amount) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'INSERT INTO economy (guildId, userId, balance) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = balance + VALUES(balance)',
-      [guildId, userId, amount],
-      (err) => {
-        if (err) {
-          console.error('Error adding balance:', err);
-          reject(err);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
-
-const removeBalance = (guildId, userId, amount) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'UPDATE economy SET balance = GREATEST(0, balance - ?) WHERE guildId = ? AND userId = ?',
-      [amount, guildId, userId],
-      (err) => {
-        if (err) {
-          console.error('Error removing balance:', err);
-          reject(err);
-        } else {
-          resolve();
         }
       }
     );
@@ -452,10 +369,6 @@ module.exports = {
   getStoryChannel,
   removeStoryChannel,
   getStoryChannels,
-  getBalance,
-  setBalance,
-  addBalance,
-  removeBalance,
   addCustomCommand,
   removeCustomCommand,
   executeCustomCommand,

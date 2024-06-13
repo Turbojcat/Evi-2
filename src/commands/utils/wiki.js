@@ -15,7 +15,7 @@ module.exports = {
       const wikiPages = await getWikiPages(message.guild.id);
 
       if (wikiPages.length === 0) {
-        return message.reply('There are no wiki pages available.');
+        return message.channel.send('There are no wiki pages available.');
       }
 
       const embed = new EmbedBuilder()
@@ -36,7 +36,7 @@ module.exports = {
       const wikiPages = await getWikiPages(message.guild.id);
 
       if (wikiPages.length === 0) {
-        return message.reply('There are no wiki pages available.');
+        return message.channel.send('There are no wiki pages available.');
       }
 
       const sendWikiPage = async (pageNumber, reply) => {

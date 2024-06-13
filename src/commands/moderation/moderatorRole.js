@@ -14,7 +14,7 @@ module.exports = {
 
     if (subcommand === 'add') {
       if (!roleInput) {
-        return message.reply('Please provide a role to add as a moderator role.');
+        return message.channel.send('Please provide a role to add as a moderator role.');
       }
 
       let roleId;
@@ -30,14 +30,14 @@ module.exports = {
       }
 
       if (!roleId) {
-        return message.reply('Invalid role. Please provide a valid role mention, ID, or name.');
+        return message.channel.send('Invalid role. Please provide a valid role mention, ID, or name.');
       }
 
       await setModeratorRole(message.guild.id, roleId);
-      message.reply(`Added <@&${roleId}> as a moderator role.`);
+      message.channel.send(`Added <@&${roleId}> as a moderator role.`);
     } else if (subcommand === 'remove') {
       if (!roleInput) {
-        return message.reply('Please provide a role to remove from moderator roles.');
+        return message.channel.send('Please provide a role to remove from moderator roles.');
       }
 
       let roleId;
@@ -53,22 +53,22 @@ module.exports = {
       }
 
       if (!roleId) {
-        return message.reply('Invalid role. Please provide a valid role mention, ID, or name.');
+        return message.channel.send('Invalid role. Please provide a valid role mention, ID, or name.');
       }
 
       await removeModeratorRole(message.guild.id, roleId);
-      message.reply(`Removed <@&${roleId}> from moderator roles.`);
+      message.channel.send(`Removed <@&${roleId}> from moderator roles.`);
     } else if (subcommand === 'list') {
       const moderatorRoles = await getModeratorRoles(message.guild.id);
 
       if (moderatorRoles.length === 0) {
-        message.reply('There are no moderator roles set.');
+        message.channel.send('There are no moderator roles set.');
       } else {
         const roleList = moderatorRoles.map(roleId => `<@&${roleId}>`).join(', ');
-        message.reply(`Current moderator roles: ${roleList}`);
+        message.channel.send(`Current moderator roles: ${roleList}`);
       }
     } else {
-      message.reply('Invalid subcommand. Please use "add", "remove", or "list".');
+      message.channel.send('Invalid subcommand. Please use "add", "remove", or "list".');
     }
   },
   data: {

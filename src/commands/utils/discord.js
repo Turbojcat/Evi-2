@@ -31,6 +31,6 @@ async function executeCommand(interactionOrMessage) {
   if (interactionOrMessage.reply) {
     await interactionOrMessage.channel.send({ embeds: [embed] });
   } else {
-    await interactionOrMessage.reply({ embeds: [embed] });
+    await interactionOrMessage.channel.send({ embeds: [embed] });
   }
 }

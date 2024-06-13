@@ -6,7 +6,7 @@ module.exports = {
   name: 'userinfo',
   description: 'Displays information about a user',
   usage: '<user|username|usertag|userID>',
-  aliases: ['profile'],
+  aliases: ['ui'],
   permissions: [],
   execute: async (message, args) => {
     let user = message.mentions.users.first();

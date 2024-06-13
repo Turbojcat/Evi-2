@@ -1,12 +1,11 @@
 // src/commands/economy/balanceadd.js
-
-const { addBalance } = require('../../database/database');
+const { addBalance, getEcoSetting } = require('../../database/ecodb');
 
 module.exports = {
   name: 'balanceadd',
-  description: 'Add balance to a user',
+  description: 'Adds balance to a user\'s account',
   usage: '<user> <amount>',
-  aliases: ['baladd'],
+  aliases: ['addbal'],
   permissions: ['MANAGE_GUILD'],
   permissionLevel: ['admin'],
   execute: async (message, args) => {
@@ -14,15 +13,21 @@ module.exports = {
     const amount = parseFloat(args[1]);
 
     if (!user || isNaN(amount)) {
-      return message.reply('Please provide a valid user and amount.');
+      return message.channel.send('Please provide a valid user and amount.');
     }
 
-    await addBalance(message.guild.id, user.id, amount);
-    message.reply(`${amount} Evi :coin: added to ${user}`);
+    try {
+      await addBalance(message.guild.id, user.id, amount);
+      const coinSymbol = await getEcoSetting(message.guild.id, 'coinSymbol', '💰');
+      message.channel.send(`Added ${amount} ${coinSymbol} to ${user}'s balance.`);
+    } catch (error) {
+      console.error('Error adding balance:', error);
+      message.channel.send('An error occurred while adding balance.');
+    }
   },
   data: {
     name: 'balanceadd',
-    description: 'Add balance to a user',
+    description: 'Adds balance to a user\'s account',
     options: [
       {
         name: 'user',
@@ -33,7 +38,7 @@ module.exports = {
       {
         name: 'amount',
         type: 10, // NUMBER
-        description: 'The amount to add',
+        description: 'The amount to add to the balance',
         required: true,
       },
     ],
@@ -42,7 +47,13 @@ module.exports = {
     const user = interaction.options.getUser('user');
     const amount = interaction.options.getNumber('amount');
 
-    await addBalance(interaction.guild.id, user.id, amount);
-    interaction.reply(`${amount} Evi :coin: added to ${user}`);
+    try {
+      await addBalance(interaction.guild.id, user.id, amount);
+      const coinSymbol = await getEcoSetting(interaction.guild.id, 'coinSymbol', '💰');
+      interaction.followUp(`Added ${amount} ${coinSymbol} to ${user}'s balance.`);
+    } catch (error) {
+      console.error('Error adding balance:', error);
+      interaction.followUp('An error occurred while adding balance.');
+    }
   },
 };

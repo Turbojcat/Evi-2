@@ -1,6 +1,5 @@
-// src/commands/economy/setBalance.js
-
-const { setBalance } = require('../../database/database');
+// src/commands/economy/setbalance.js
+const { setBalance, getEcoSetting } = require('../../database/ecodb');
 
 module.exports = {
   name: 'setbalance',
@@ -14,34 +13,33 @@ module.exports = {
     const amount = parseFloat(args[1]);
 
     if (!user || isNaN(amount)) {
-      return message.reply('Please provide a valid user and amount.');
+      return message.channel.send('Please provide a valid user and amount.');
     }
 
-    await setBalance(message.guild.id, user.id, amount);
-    message.reply(`Set ${user}'s balance to ${amount}.`);
+    try {
+      await setBalance(message.guild.id, user.id, amount);
+      const coinSymbol = await getEcoSetting(message.guild.id, 'coinSymbol', '💰');
+      message.channel.send(`Set ${user}'s balance to ${amount} ${coinSymbol}.`);
+    } catch (error) {
+      console.error('Error setting balance:', error);
+      message.channel.send('An error occurred while setting the balance.');
+    }
   },
   data: {
     name: 'setbalance',
     description: 'Sets a user\'s balance',
     options: [
       {
-        name: 'set',
-        type: 1, // SUB_COMMAND
-        description: 'Sets a user\'s balance',
-        options: [
-          {
-            name: 'user',
-            type: 6, // USER
-            description: 'The user to set the balance for',
-            required: true,
-          },
-          {
-            name: 'amount',
-            type: 10, // NUMBER
-            description: 'The amount to set the balance to',
-            required: true,
-          },
-        ],
+        name: 'user',
+        type: 6, // USER
+        description: 'The user to set the balance for',
+        required: true,
+      },
+      {
+        name: 'amount',
+        type: 10, // NUMBER
+        description: 'The amount to set the balance to',
+        required: true,
       },
     ],
   },
@@ -49,7 +47,13 @@ module.exports = {
     const user = interaction.options.getUser('user');
     const amount = interaction.options.getNumber('amount');
 
-    await setBalance(interaction.guild.id, user.id, amount);
-    interaction.reply(`Set ${user}'s balance to ${amount}.`);
+    try {
+      await setBalance(interaction.guild.id, user.id, amount);
+      const coinSymbol = await getEcoSetting(interaction.guild.id, 'coinSymbol', '💰');
+      interaction.followUp(`Set ${user}'s balance to ${amount} ${coinSymbol}.`);
+    } catch (error) {
+      console.error('Error setting balance:', error);
+      interaction.followUp('An error occurred while setting the balance.');
+    }
   },
 };
