@@ -6,7 +6,7 @@ module.exports = {
   description: 'Bans a user from the server',
   usage: '<user> [reason]',
   permissions: ['BAN_MEMBERS'],
-  permissionLevel: ['moderator'],
+  permissionLevel: ['admin'],
   execute: async (message, args) => {
     const user = message.mentions.users.first();
     const reason = args.slice(1).join(' ') || 'No reason provided';

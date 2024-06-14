@@ -7,7 +7,7 @@ module.exports = {
   description: 'Temporarily bans a user for a specified duration',
   usage: '<user> <duration> [reason]',
   permissions: ['BAN_MEMBERS'],
-  permissionLevel: ['moderator'],
+  permissionLevel: ['admin'],
   execute: async (message, args) => {
     const user = message.mentions.users.first();
     const duration = args[1];

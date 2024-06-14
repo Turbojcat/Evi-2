@@ -20,6 +20,7 @@ async function createEmbedTable() {
   }
 }
 
+
 async function createEmbed(userId, guildId, embedData) {
   try {
     const connection = await pool.getConnection();

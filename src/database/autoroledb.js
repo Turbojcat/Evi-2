@@ -1,75 +1,59 @@
 // src/database/autoroledb.js
 const { pool } = require('./database');
 
-const createAutoRoleTable = () => {
-  const sql = `
-    CREATE TABLE IF NOT EXISTS auto_roles (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      guild_id VARCHAR(255) NOT NULL,
-      role_id VARCHAR(255) NOT NULL,
-      duration BIGINT,
-      UNIQUE KEY unique_auto_role (guild_id, role_id)
-    )
-  `;
+async function createAutoRoleTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS auto_roles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        guild_id VARCHAR(255) NOT NULL,
+        role_id VARCHAR(255) NOT NULL,
+        duration BIGINT,
+        UNIQUE KEY unique_auto_role (guild_id, role_id)
+      )
+    `);
+    console.log('Auto roles table created or already exists.');
+  } catch (error) {
+    console.error('Error creating auto_roles table:', error);
+  }
+}
 
-  pool.query(sql, (error) => {
-    if (error) {
-      console.error('Error creating auto_roles table:', error);
-    } else {
-    }
-  });
-};
-
-const addAutoRole = (guildId, roleId, duration) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function addAutoRole(guildId, roleId, duration) {
+  try {
+    await pool.execute(
       'INSERT INTO auto_roles (guild_id, role_id, duration) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE duration = VALUES(duration)',
-      [guildId, roleId, duration],
-      (error) => {
-        if (error) {
-          console.error('Error adding autorole:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
+      [guildId, roleId, duration]
     );
-  });
-};
+  } catch (error) {
+    console.error('Error adding autorole:', error);
+    throw error;
+  }
+}
 
-const removeAutoRole = (guildId, roleId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function removeAutoRole(guildId, roleId) {
+  try {
+    await pool.execute(
       'DELETE FROM auto_roles WHERE guild_id = ? AND role_id = ?',
-      [guildId, roleId],
-      (error) => {
-        if (error) {
-          console.error('Error removing autorole:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
+      [guildId, roleId]
     );
-  });
-};
+  } catch (error) {
+    console.error('Error removing autorole:', error);
+    throw error;
+  }
+}
 
-const getAutoRoles = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function getAutoRoles(guildId) {
+  try {
+    const [rows] = await pool.execute(
       'SELECT role_id, duration FROM auto_roles WHERE guild_id = ?',
-      [guildId],
-      (error, results) => {
-        if (error) {
-          console.error('Error getting autoroles:', error);
-          reject(error);
-        } else {
-          resolve(results);
-        }
-      }
+      [guildId]
     );
-  });
-};
+    return rows;
+  } catch (error) {
+    console.error('Error getting autoroles:', error);
+    throw error;
+  }
+}
 
 module.exports = {
   createAutoRoleTable,

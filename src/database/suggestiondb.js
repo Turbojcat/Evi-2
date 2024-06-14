@@ -1,157 +1,98 @@
-// src/database/suggestion.js
+// src/database/suggestiondb.js
 const { pool } = require('./database');
 
-// src/database/suggestiondb.js
-const createSuggestionTable = () => {
-  const createTableSql = `
-    CREATE TABLE IF NOT EXISTS suggestions (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id VARCHAR(255) NOT NULL,
-      guild_id VARCHAR(255) NOT NULL,
-      suggestion TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      sent BOOLEAN DEFAULT FALSE
-    )
-  `;
+async function createSuggestionTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS suggestions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        guild_id VARCHAR(255) NOT NULL,
+        suggestion TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        sent BOOLEAN DEFAULT FALSE
+      )
+    `);
 
-  pool.query(createTableSql, (createTableError) => {
-    if (createTableError) {
-      console.error('Error creating suggestions table:', createTableError);
-    } else {
-      const alterTableSql = `
-        ALTER TABLE suggestions
-        ADD COLUMN IF NOT EXISTS status VARCHAR(255) DEFAULT 'pending'
-      `;
+    await pool.execute(`
+      ALTER TABLE suggestions
+      ADD COLUMN IF NOT EXISTS status VARCHAR(255) DEFAULT 'pending'
+    `);
 
-      pool.query(alterTableSql, (alterTableError) => {
-        if (alterTableError) {
-          console.error('Error adding status column to suggestions table:', alterTableError);
-        } else {
-        }
-      });
-    }
-  });
-};
+    console.log('Suggestions table created or already exists.');
+  } catch (error) {
+    console.error('Error creating suggestions table:', error);
+  }
+}
 
-
-
-const createSuggestion = (userId, guildId, suggestion) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function createSuggestion(userId, guildId, suggestion) {
+  try {
+    const [result] = await pool.execute(
       'INSERT INTO suggestions (user_id, guild_id, suggestion) VALUES (?, ?, ?)',
-      [userId, guildId, suggestion],
-      (error, results) => {
-        if (error) {
-          console.error('Error saving suggestion:', error);
-          reject(error);
-        } else {
-          resolve(results.insertId);
-        }
-      }
+      [userId, guildId, suggestion]
     );
-  });
-};
+    return result.insertId;
+  } catch (error) {
+    console.error('Error saving suggestion:', error);
+    throw error;
+  }
+}
 
-const getNewSuggestions = () => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT * FROM suggestions WHERE sent = FALSE',
-      (error, results) => {
-        if (error) {
-          console.error('Error getting new suggestions:', error);
-          reject(error);
-        } else {
-          resolve(results);
-        }
-      }
-    );
-  });
-};
+async function getNewSuggestions() {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM suggestions WHERE sent = FALSE');
+    return rows;
+  } catch (error) {
+    console.error('Error getting new suggestions:', error);
+    throw error;
+  }
+}
 
-const markSuggestionAsSent = (suggestionId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'UPDATE suggestions SET sent = TRUE WHERE id = ?',
-      [suggestionId],
-      (error) => {
-        if (error) {
-          console.error('Error marking suggestion as sent:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
+async function markSuggestionAsSent(suggestionId) {
+  try {
+    await pool.execute('UPDATE suggestions SET sent = TRUE WHERE id = ?', [suggestionId]);
+  } catch (error) {
+    console.error('Error marking suggestion as sent:', error);
+    throw error;
+  }
+}
 
-const isSuggestionBlacklisted = (userId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT * FROM suggestion_blacklist WHERE user_id = ?',
-      [userId],
-      (error, results) => {
-        if (error) {
-          console.error('Error checking suggestion blacklist:', error);
-          reject(error);
-        } else {
-          resolve(results.length > 0);
-        }
-      }
-    );
-  });
-};
+async function isSuggestionBlacklisted(userId) {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM suggestion_blacklist WHERE user_id = ?', [userId]);
+    return rows.length > 0;
+  } catch (error) {
+    console.error('Error checking suggestion blacklist:', error);
+    throw error;
+  }
+}
 
-const addSuggestionBlacklist = (userId, reason) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'INSERT INTO suggestion_blacklist (user_id, reason) VALUES (?, ?)',
-      [userId, reason],
-      (error) => {
-        if (error) {
-          console.error('Error adding user to suggestion blacklist:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
+async function addSuggestionBlacklist(userId, reason) {
+  try {
+    await pool.execute('INSERT INTO suggestion_blacklist (user_id, reason) VALUES (?, ?)', [userId, reason]);
+  } catch (error) {
+    console.error('Error adding user to suggestion blacklist:', error);
+    throw error;
+  }
+}
 
-const removeSuggestionBlacklist = (userId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'DELETE FROM suggestion_blacklist WHERE user_id = ?',
-      [userId],
-      (error) => {
-        if (error) {
-          console.error('Error removing user from suggestion blacklist:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
+async function removeSuggestionBlacklist(userId) {
+  try {
+    await pool.execute('DELETE FROM suggestion_blacklist WHERE user_id = ?', [userId]);
+  } catch (error) {
+    console.error('Error removing user from suggestion blacklist:', error);
+    throw error;
+  }
+}
 
-const updateSuggestionStatus = (suggestionId, status) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'UPDATE suggestions SET status = ? WHERE id = ?',
-      [status, suggestionId],
-      (error) => {
-        if (error) {
-          console.error('Error updating suggestion status:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
-    );
-  });
-};
+async function updateSuggestionStatus(suggestionId, status) {
+  try {
+    await pool.execute('UPDATE suggestions SET status = ? WHERE id = ?', [status, suggestionId]);
+  } catch (error) {
+    console.error('Error updating suggestion status:', error);
+    throw error;
+  }
+}
 
 module.exports = {
   createSuggestionTable,

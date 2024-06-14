@@ -5,7 +5,7 @@ const { Routes } = require('discord.js');
 const { token, suggestionChannelId, approvedSuggestionChannelId, deniedSuggestionChannelId } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
-const { setupDatabase, pool, hasPremiumSubscription, addOwnerRole, createUserProfilesTable } = require('./database/database');
+const { setupDatabase, createUserProfilesTable } = require('./database/database');
 const { createWikiPageTable } = require('./database/wiki');
 const { createWelcomeLeaveTable, getWelcomeMessage, getLeaveMessage } = require('./database/welcomeLeave');
 const { replacePlaceholders } = require('./placeholders');
@@ -16,7 +16,7 @@ const { getReactionRoles } = require('./database/reactionroledb');
 const { createAutoRoleTable } = require('./database/autoroledb');
 const { getAutoRoles } = require('./database/autoroledb');
 const { createEconomyTable, createEcoSettingsTable } = require('./database/ecodb');
-
+const { createEmbedTable } = require('./database/embeddb');
 
 const client = new Client({
   intents: [
@@ -98,11 +98,18 @@ async function sendSuggestionsToEvi(client) {
   }
 }
 
-client.once('ready', () => {
+client.once('ready', async () => {
   updateActivity();
   const commandsPath = path.join(__dirname, 'commands');
   commandHandler.loadCommands(commandsPath);
-  setupDatabase();
+
+  try {
+    await setupDatabase();
+    console.log('Database tables created successfully');
+  } catch (error) {
+    console.error('Error setting up database:', error);
+  }
+
   createUserProfilesTable();
   createWikiPageTable();
   createWelcomeLeaveTable();
@@ -112,33 +119,31 @@ client.once('ready', () => {
   createEconomyTable();
   createEcoSettingsTable();
 
+  try {
+    await createEmbedTable();
+    console.log('Custom embeds table created successfully');
+  } catch (error) {
+    console.error('Error creating custom embeds table:', error);
+  }
 
   const { commandCount, aliasCount } = commandHandler.getCommandStats();
   console.log(`${client.user.tag} (${client.user.id}) is ready with ${commandCount} commands and ${aliasCount} aliases, serving ${client.guilds.cache.size} servers and ${client.users.cache.size} users!`);
 
   const rest = new REST({ version: '10' }).setToken(token);
 
-  (async () => {
-    try {
-      await rest.put(Routes.applicationCommands(client.user.id), {
-        body: [...commandHandler.slashCommands.values()].map(command => command.data),
-      });
+  try {
+    await rest.put(Routes.applicationCommands(client.user.id), {
+      body: [...commandHandler.slashCommands.values()].map(command => command.data),
+    });
 
-      console.log('Finished refreshing application (/) commands.');
-    } catch (error) {
-      console.error(error);
-    }
-  })();
+    console.log('Finished refreshing application (/) commands.');
+  } catch (error) {
+    console.error(error);
+  }
 
   setInterval(() => {
     sendSuggestionsToEvi(client);
   }, 30 * 1000); // Check for new suggestions every 30 seconds
-  
-
-  /*setInterval(() => {
-    sendSuggestionsToEvi(client);
-  }, 24 * 60 * 60 * 1000); // Check for new suggestions every 24 hours
-  */ 
 });
 
 client.on('messageCreate', (message) => {
@@ -203,7 +208,6 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 });
-
 
 client.on('guildMemberAdd', async (member) => {
   const guildId = member.guild.id;

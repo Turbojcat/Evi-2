@@ -1,160 +1,122 @@
 // src/database/welcomeLeave.js
 const { pool } = require('./database');
 
-const createWelcomeLeaveTable = () => {
-  const sql = `
-    CREATE TABLE IF NOT EXISTS welcome_leave (
-      guild_id VARCHAR(255) PRIMARY KEY,
-      welcome_channel_id VARCHAR(255),
-      welcome_message TEXT,
-      leave_channel_id VARCHAR(255),
-      leave_message TEXT
-    )
-  `;
+async function createWelcomeLeaveTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS welcome_leave (
+        guild_id VARCHAR(255) PRIMARY KEY,
+        welcome_channel_id VARCHAR(255),
+        welcome_message TEXT,
+        leave_channel_id VARCHAR(255),
+        leave_message TEXT
+      )
+    `);
+    console.log('Welcome leave table created or already exists.');
+  } catch (error) {
+    console.error('Error creating welcome_leave table:', error);
+  }
+}
 
-  pool.query(sql, (error) => {
-    if (error) {
-      console.error('Error creating welcome_leave table:', error);
-    } else {
-    }
-  });
-};
-
-const getWelcomeMessage = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function getWelcomeMessage(guildId) {
+  try {
+    const [rows] = await pool.execute(
       'SELECT welcome_message FROM welcome_leave WHERE guild_id = ?',
-      [guildId],
-      (error, results) => {
-        if (error) {
-          console.error('Error getting welcome message:', error);
-          reject(error);
-        } else {
-          resolve(results.length > 0 ? results[0].welcome_message : null);
-        }
-      }
+      [guildId]
     );
-  });
-};
+    return rows.length > 0 ? rows[0].welcome_message : null;
+  } catch (error) {
+    console.error('Error getting welcome message:', error);
+    throw error;
+  }
+}
 
-const setWelcomeMessage = (guildId, message) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function setWelcomeMessage(guildId, message) {
+  try {
+    await pool.execute(
       'INSERT INTO welcome_leave (guild_id, welcome_message) VALUES (?, ?) ON DUPLICATE KEY UPDATE welcome_message = VALUES(welcome_message)',
-      [guildId, message],
-      (error) => {
-        if (error) {
-          console.error('Error setting welcome message:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
+      [guildId, message]
     );
-  });
-};
+  } catch (error) {
+    console.error('Error setting welcome message:', error);
+    throw error;
+  }
+}
 
-const getLeaveMessage = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function getLeaveMessage(guildId) {
+  try {
+    const [rows] = await pool.execute(
       'SELECT leave_message FROM welcome_leave WHERE guild_id = ?',
-      [guildId],
-      (error, results) => {
-        if (error) {
-          console.error('Error getting leave message:', error);
-          reject(error);
-        } else {
-          resolve(results.length > 0 ? results[0].leave_message : null);
-        }
-      }
+      [guildId]
     );
-  });
-};
+    return rows.length > 0 ? rows[0].leave_message : null;
+  } catch (error) {
+    console.error('Error getting leave message:', error);
+    throw error;
+  }
+}
 
-const setLeaveMessage = (guildId, message) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function setLeaveMessage(guildId, message) {
+  try {
+    await pool.execute(
       'INSERT INTO welcome_leave (guild_id, leave_message) VALUES (?, ?) ON DUPLICATE KEY UPDATE leave_message = VALUES(leave_message)',
-      [guildId, message],
-      (error) => {
-        if (error) {
-          console.error('Error setting leave message:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
+      [guildId, message]
     );
-  });
-};
+  } catch (error) {
+    console.error('Error setting leave message:', error);
+    throw error;
+  }
+}
 
-const getWelcomeChannelId = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function getWelcomeChannelId(guildId) {
+  try {
+    const [rows] = await pool.execute(
       'SELECT welcome_channel_id FROM welcome_leave WHERE guild_id = ?',
-      [guildId],
-      (error, results) => {
-        if (error) {
-          console.error('Error getting welcome channel ID:', error);
-          reject(error);
-        } else {
-          resolve(results.length > 0 ? results[0].welcome_channel_id : null);
-        }
-      }
+      [guildId]
     );
-  });
-};
+    return rows.length > 0 ? rows[0].welcome_channel_id : null;
+  } catch (error) {
+    console.error('Error getting welcome channel ID:', error);
+    throw error;
+  }
+}
 
-const setWelcomeChannelId = (guildId, channelId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function setWelcomeChannelId(guildId, channelId) {
+  try {
+    await pool.execute(
       'INSERT INTO welcome_leave (guild_id, welcome_channel_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE welcome_channel_id = VALUES(welcome_channel_id)',
-      [guildId, channelId],
-      (error) => {
-        if (error) {
-          console.error('Error setting welcome channel ID:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
+      [guildId, channelId]
     );
-  });
-};
+  } catch (error) {
+    console.error('Error setting welcome channel ID:', error);
+    throw error;
+  }
+}
 
-const getLeaveChannelId = (guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function getLeaveChannelId(guildId) {
+  try {
+    const [rows] = await pool.execute(
       'SELECT leave_channel_id FROM welcome_leave WHERE guild_id = ?',
-      [guildId],
-      (error, results) => {
-        if (error) {
-          console.error('Error getting leave channel ID:', error);
-          reject(error);
-        } else {
-          resolve(results.length > 0 ? results[0].leave_channel_id : null);
-        }
-      }
+      [guildId]
     );
-  });
-};
+    return rows.length > 0 ? rows[0].leave_channel_id : null;
+  } catch (error) {
+    console.error('Error getting leave channel ID:', error);
+    throw error;
+  }
+}
 
-const setLeaveChannelId = (guildId, channelId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function setLeaveChannelId(guildId, channelId) {
+  try {
+    await pool.execute(
       'INSERT INTO welcome_leave (guild_id, leave_channel_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE leave_channel_id = VALUES(leave_channel_id)',
-      [guildId, channelId],
-      (error) => {
-        if (error) {
-          console.error('Error setting leave channel ID:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
+      [guildId, channelId]
     );
-  });
-};
+  } catch (error) {
+    console.error('Error setting leave channel ID:', error);
+    throw error;
+  }
+}
 
 module.exports = {
   createWelcomeLeaveTable,
