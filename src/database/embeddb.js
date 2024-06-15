@@ -6,11 +6,12 @@ async function createEmbedTable() {
     const connection = await pool.getConnection();
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS custom_embeds (
+        id INT AUTO_INCREMENT,
         user_id VARCHAR(255) NOT NULL,
         guild_id VARCHAR(255) NOT NULL,
-        embed_id INT AUTO_INCREMENT,
         embed_data JSON NOT NULL,
-        PRIMARY KEY (user_id, guild_id, embed_id)
+        PRIMARY KEY (id),
+        UNIQUE KEY (user_id, guild_id, id)
       )
     `);
     connection.release();
@@ -19,7 +20,6 @@ async function createEmbedTable() {
     console.error('Error creating custom embeds table:', error);
   }
 }
-
 
 async function createEmbed(userId, guildId, embedData) {
   try {
@@ -40,7 +40,7 @@ async function getEmbed(userId, guildId, embedId) {
   try {
     const connection = await pool.getConnection();
     const [rows] = await connection.query(
-      'SELECT embed_data FROM custom_embeds WHERE user_id = ? AND guild_id = ? AND embed_id = ?',
+      'SELECT embed_data FROM custom_embeds WHERE user_id = ? AND guild_id = ? AND id = ?',
       [userId, guildId, embedId]
     );
     connection.release();
@@ -61,13 +61,13 @@ async function getEmbeds(userId, guildId) {
   try {
     const connection = await pool.getConnection();
     const [rows] = await connection.query(
-      'SELECT embed_id, embed_data FROM custom_embeds WHERE user_id = ? AND guild_id = ?',
+      'SELECT id, embed_data FROM custom_embeds WHERE user_id = ? AND guild_id = ?',
       [userId, guildId]
     );
     connection.release();
 
     const embeds = rows.map((row) => ({
-      id: row.embed_id,
+      id: row.id,
       data: JSON.parse(row.embed_data),
     }));
 
@@ -82,7 +82,7 @@ async function updateEmbed(userId, guildId, embedId, embedData) {
   try {
     const connection = await pool.getConnection();
     await connection.query(
-      'UPDATE custom_embeds SET embed_data = ? WHERE user_id = ? AND guild_id = ? AND embed_id = ?',
+      'UPDATE custom_embeds SET embed_data = ? WHERE user_id = ? AND guild_id = ? AND id = ?',
       [JSON.stringify(embedData), userId, guildId, embedId]
     );
     connection.release();
@@ -97,7 +97,7 @@ async function deleteEmbed(userId, guildId, embedId) {
   try {
     const connection = await pool.getConnection();
     const [result] = await connection.query(
-      'DELETE FROM custom_embeds WHERE user_id = ? AND guild_id = ? AND embed_id = ?',
+      'DELETE FROM custom_embeds WHERE user_id = ? AND guild_id = ? AND id = ?',
       [userId, guildId, embedId]
     );
     connection.release();

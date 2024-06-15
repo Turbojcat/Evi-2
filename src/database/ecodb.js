@@ -1,133 +1,120 @@
-// src/database/embeddb.js
+// src/database/ecodb.js
 const { pool } = require('./database');
 
-async function createEmbedTable() {
+async function createEconomyTable() {
   try {
-    const connection = await pool.getConnection();
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS custom_embeds (
-        user_id VARCHAR(255) NOT NULL,
-        guild_id VARCHAR(255) NOT NULL,
-        embed_id INT AUTO_INCREMENT,
-        embed_data JSON NOT NULL,
-        PRIMARY KEY (user_id, guild_id, embed_id)
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS economy (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        guildId VARCHAR(255) NOT NULL,
+        userId VARCHAR(255) NOT NULL,
+        balance DECIMAL(10, 2) NOT NULL DEFAULT 0,
+        UNIQUE KEY unique_user_balance (guildId, userId)
       )
     `);
-    connection.release();
-    console.log('Custom embeds table created or already exists.');
+    console.log('Economy table created or already exists.');
   } catch (error) {
-    console.error('Error creating custom embeds table:', error);
+    console.error('Error creating economy table:', error);
   }
 }
 
-async function createEmbed(userId, guildId, embedData) {
+async function createEcoSettingsTable() {
   try {
-    const connection = await pool.getConnection();
-    const [result] = await connection.query(
-      'INSERT INTO custom_embeds (user_id, guild_id, embed_data) VALUES (?, ?, ?)',
-      [userId, guildId, JSON.stringify(embedData)]
-    );
-    connection.release();
-    return result.insertId;
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS eco_settings (
+        guild_id VARCHAR(255) NOT NULL,
+        setting_name VARCHAR(255) NOT NULL,
+        setting_value VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+        PRIMARY KEY (guild_id, setting_name)
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+    console.log('Eco settings table created or already exists.');
   } catch (error) {
-    console.error('Error creating custom embed:', error);
-    return null;
+    console.error('Error creating eco_settings table:', error);
   }
 }
 
-async function getEmbed(userId, guildId, embedId) {
+async function getBalance(guildId, userId) {
   try {
-    const connection = await pool.getConnection();
-    const [rows] = await connection.query(
-      'SELECT embed_data FROM custom_embeds WHERE user_id = ? AND guild_id = ? AND embed_id = ?',
-      [userId, guildId, embedId]
+    const [rows] = await pool.execute(
+      'SELECT balance FROM economy WHERE guildId = ? AND userId = ?',
+      [guildId, userId]
     );
-    connection.release();
-
-    if (rows.length === 0) {
-      return null;
-    }
-
-    const embedData = JSON.parse(rows[0].embed_data);
-    return embedData;
+    return rows.length > 0 ? rows[0].balance : 0;
   } catch (error) {
-    console.error('Error retrieving custom embed:', error);
-    return null;
+    console.error('Error getting balance:', error);
+    throw error;
   }
 }
 
-async function getEmbeds(userId, guildId) {
+async function setBalance(guildId, userId, balance) {
   try {
-    const connection = await pool.getConnection();
-    const [rows] = await connection.query(
-      'SELECT embed_id, embed_data FROM custom_embeds WHERE user_id = ? AND guild_id = ?',
-      [userId, guildId]
+    await pool.execute(
+      'INSERT INTO economy (guildId, userId, balance) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance)',
+      [guildId, userId, balance]
     );
-    connection.release();
-
-    const embeds = rows.map((row) => ({
-      id: row.embed_id,
-      data: JSON.parse(row.embed_data),
-    }));
-
-    return embeds;
   } catch (error) {
-    console.error('Error retrieving custom embeds:', error);
-    return [];
+    console.error('Error setting balance:', error);
+    throw error;
   }
 }
 
-async function updateEmbed(userId, guildId, embedId, embedData) {
+async function addBalance(guildId, userId, amount) {
   try {
-    const connection = await pool.getConnection();
-    await connection.query(
-      'UPDATE custom_embeds SET embed_data = ? WHERE user_id = ? AND guild_id = ? AND embed_id = ?',
-      [JSON.stringify(embedData), userId, guildId, embedId]
+    await pool.execute(
+      'INSERT INTO economy (guildId, userId, balance) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = balance + VALUES(balance)',
+      [guildId, userId, amount]
     );
-    connection.release();
-    return true;
   } catch (error) {
-    console.error('Error updating custom embed:', error);
-    return false;
+    console.error('Error adding balance:', error);
+    throw error;
   }
 }
 
-async function deleteEmbed(userId, guildId, embedId) {
+async function removeBalance(guildId, userId, amount) {
   try {
-    const connection = await pool.getConnection();
-    const [result] = await connection.query(
-      'DELETE FROM custom_embeds WHERE user_id = ? AND guild_id = ? AND embed_id = ?',
-      [userId, guildId, embedId]
+    await pool.execute(
+      'UPDATE economy SET balance = GREATEST(0, balance - ?) WHERE guildId = ? AND userId = ?',
+      [amount, guildId, userId]
     );
-    connection.release();
-    return result.affectedRows > 0;
   } catch (error) {
-    console.error('Error deleting custom embed:', error);
-    return false;
+    console.error('Error removing balance:', error);
+    throw error;
   }
 }
 
-async function getEmbedCount(userId, guildId) {
+async function getEcoSetting(guildId, settingName, defaultValue = null) {
   try {
-    const connection = await pool.getConnection();
-    const [rows] = await connection.query(
-      'SELECT COUNT(*) AS count FROM custom_embeds WHERE user_id = ? AND guild_id = ?',
-      [userId, guildId]
+    const [rows] = await pool.execute(
+      'SELECT setting_value FROM eco_settings WHERE guild_id = ? AND setting_name = ?',
+      [guildId, settingName]
     );
-    connection.release();
-    return rows[0].count;
+    return rows.length > 0 ? rows[0].setting_value : defaultValue;
   } catch (error) {
-    console.error('Error retrieving custom embed count:', error);
-    return 0;
+    console.error('Error getting eco setting:', error);
+    throw error;
+  }
+}
+
+async function setEcoSetting(guildId, settingName, settingValue) {
+  try {
+    await pool.execute(
+      'INSERT INTO eco_settings (guild_id, setting_name, setting_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+      [guildId, settingName, settingValue]
+    );
+  } catch (error) {
+    console.error('Error setting eco setting:', error);
+    throw error;
   }
 }
 
 module.exports = {
-  createEmbedTable,
-  createEmbed,
-  getEmbed,
-  getEmbeds,
-  updateEmbed,
-  deleteEmbed,
-  getEmbedCount,
+  createEconomyTable,
+  createEcoSettingsTable,
+  getBalance,
+  setBalance,
+  addBalance,
+  removeBalance,
+  getEcoSetting,
+  setEcoSetting,
 };

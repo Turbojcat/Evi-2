@@ -17,6 +17,8 @@ const { createAutoRoleTable } = require('./database/autoroledb');
 const { getAutoRoles } = require('./database/autoroledb');
 const { createEconomyTable, createEcoSettingsTable } = require('./database/ecodb');
 const { createEmbedTable } = require('./database/embeddb');
+const { setupInventoryDatabase } = require('./database/inventorydb');
+const { createShopItemTable, createShopCategoryTable, createShopPurchaseTable, dropShopItemTable } = require('./database/shopdb');
 
 const client = new Client({
   intents: [
@@ -124,6 +126,23 @@ client.once('ready', async () => {
     console.log('Custom embeds table created successfully');
   } catch (error) {
     console.error('Error creating custom embeds table:', error);
+  }
+
+  try {
+    await setupInventoryDatabase();
+    console.log('Inventory database setup completed');
+  } catch (error) {
+    console.error('Error setting up inventory database:', error);
+  }
+
+  try {
+    await createShopCategoryTable();
+    await dropShopItemTable();
+    await createShopItemTable();
+    await createShopPurchaseTable();
+    console.log('Shop tables created successfully');
+  } catch (error) {
+    console.error('Error creating shop tables:', error);
   }
 
   const { commandCount, aliasCount } = commandHandler.getCommandStats();
