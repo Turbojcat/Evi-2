@@ -67,85 +67,65 @@ module.exports = {
     const collector = sentMessage.createMessageComponentCollector({ filter, time: 60000 });
 
     collector.on('collect', async (interaction) => {
-      if (interaction.customId === 'addCategory') {
-        const categoryName = await askQuestion(interaction, 'Enter the category name:');
-        if (categoryName) {
-          await addShopCategory(guildId, categoryName);
-          if (!interaction.deferred && !interaction.replied) {
-            await interaction.reply(`Category "${categoryName}" has been added to the shop.`);
-          } else {
+      try {
+        await interaction.deferReply({ ephemeral: true });
+
+        if (interaction.customId === 'addCategory') {
+          const categoryName = await askQuestion(interaction, 'Enter the category name:');
+          if (categoryName) {
+            await addShopCategory(guildId, categoryName);
             await interaction.editReply(`Category "${categoryName}" has been added to the shop.`);
           }
-        }
-      } else if (interaction.customId === 'addItem') {
-        const itemName = await askQuestion(interaction, 'Enter the item name:');
-        const itemDescription = await askQuestion(interaction, 'Enter the item description:');
-        const itemPrice = await askQuestion(interaction, 'Enter the item price:');
+        } else if (interaction.customId === 'addItem') {
+          const itemName = await askQuestion(interaction, 'Enter the item name:');
+          const itemDescription = await askQuestion(interaction, 'Enter the item description:');
+          const itemPrice = await askQuestion(interaction, 'Enter the item price:');
 
-        if (itemName && itemDescription && itemPrice) {
-          await addShopItem(guildId, null, itemName, itemDescription, parseInt(itemPrice), null);
-
-          if (!interaction.deferred && !interaction.replied) {
-            await interaction.reply(`Item "${itemName}" has been added to the shop.`);
-          } else {
+          if (itemName && itemDescription && itemPrice) {
+            await addShopItem(guildId, null, itemName, itemDescription, parseInt(itemPrice), null);
             await interaction.editReply(`Item "${itemName}" has been added to the shop.`);
           }
-        }
-      } else if (interaction.customId === 'addRole') {
-        const roleName = await askQuestion(interaction, 'Enter the role name:');
-        const roleDescription = await askQuestion(interaction, 'Enter the role description:');
-        const rolePrice = await askQuestion(interaction, 'Enter the role price:');
-        const roleId = await askQuestion(interaction, 'Enter the role ID:');
+        } else if (interaction.customId === 'addRole') {
+          const roleName = await askQuestion(interaction, 'Enter the role name:');
+          const roleDescription = await askQuestion(interaction, 'Enter the role description:');
+          const rolePrice = await askQuestion(interaction, 'Enter the role price:');
+          const roleId = await askQuestion(interaction, 'Enter the role ID:');
 
-        if (roleName && roleDescription && rolePrice && roleId) {
-          await addShopRole(guildId, null, roleName, roleDescription, parseInt(rolePrice), roleId);
-          if (!interaction.deferred && !interaction.replied) {
-            await interaction.reply(`Role "${roleName}" has been added to the shop.`);
-          } else {
+          if (roleName && roleDescription && rolePrice && roleId) {
+            await addShopRole(guildId, null, roleName, roleDescription, parseInt(rolePrice), roleId);
             await interaction.editReply(`Role "${roleName}" has been added to the shop.`);
           }
-        }
-      } else if (interaction.customId === 'sellItem') {
-        const itemName = await askQuestion(interaction, 'Enter the item name:');
-        const itemPrice = await askQuestion(interaction, 'Enter the sell price:');
+        } else if (interaction.customId === 'sellItem') {
+          const itemName = await askQuestion(interaction, 'Enter the item name:');
+          const itemPrice = await askQuestion(interaction, 'Enter the sell price:');
 
-        if (itemName && itemPrice) {
-          const item = await getItemByName(guildId, itemName);
-          if (item) {
-            await updateShopItem(item.id, null, item.name, item.description, parseInt(itemPrice), null);
-            if (!interaction.deferred && !interaction.replied) {
-              await interaction.reply(`Item "${itemName}" can now be sold for ${itemPrice} coins.`);
-            } else {
+          if (itemName && itemPrice) {
+            const item = await getItemByName(guildId, itemName);
+            if (item) {
+              await setItemPrice(item.id, parseInt(itemPrice));
               await interaction.editReply(`Item "${itemName}" can now be sold for ${itemPrice} coins.`);
-            }
-          } else {
-            if (!interaction.deferred && !interaction.replied) {
-              await interaction.reply(`Item "${itemName}" not found in the shop.`);
             } else {
               await interaction.editReply(`Item "${itemName}" not found in the shop.`);
             }
           }
-        }
-      } else if (interaction.customId === 'sellRole') {
-        const roleName = await askQuestion(interaction, 'Enter the role name:');
-        const rolePrice = await askQuestion(interaction, 'Enter the sell price:');
+        } else if (interaction.customId === 'sellRole') {
+          const roleName = await askQuestion(interaction, 'Enter the role name:');
+          const rolePrice = await askQuestion(interaction, 'Enter the sell price:');
 
-        if (roleName && rolePrice) {
-          const role = await getRoleByName(guildId, roleName);
-          if (role) {
-            await setRolePrice(role.id, parseInt(rolePrice));
-            if (!interaction.deferred && !interaction.replied) {
-              await interaction.reply(`Role "${roleName}" can now be sold for ${rolePrice} coins.`);
-            } else {
+          if (roleName && rolePrice) {
+            const role = await getRoleByName(guildId, roleName);
+            if (role) {
+              await setRolePrice(role.id, parseInt(rolePrice));
               await interaction.editReply(`Role "${roleName}" can now be sold for ${rolePrice} coins.`);
-            }
-          } else {
-            if (!interaction.deferred && !interaction.replied) {
-              await interaction.reply(`Role "${roleName}" not found in the shop.`);
             } else {
               await interaction.editReply(`Role "${roleName}" not found in the shop.`);
             }
           }
+        }
+      } catch (error) {
+        console.error('Error handling interaction:', error);
+        if (!interaction.replied) {
+          await interaction.editReply({ content: 'An error occurred while processing your request. Please try again later.', ephemeral: true });
         }
       }
     });
@@ -157,12 +137,7 @@ module.exports = {
 };
 
 async function askQuestion(interaction, question) {
-  if (!interaction.deferred && !interaction.replied) {
-    await interaction.deferReply();
-  }
-
-  await interaction.editReply(question);
-
+  await interaction.followUp({ content: question, ephemeral: true });
   const response = await interaction.channel.awaitMessages({
     filter: (m) => m.author.id === interaction.user.id,
     max: 1,

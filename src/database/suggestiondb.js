@@ -19,7 +19,6 @@ async function createSuggestionTable() {
       ADD COLUMN IF NOT EXISTS status VARCHAR(255) DEFAULT 'pending'
     `);
 
-    console.log('Suggestions table created or already exists.');
   } catch (error) {
     console.error('Error creating suggestions table:', error);
   }

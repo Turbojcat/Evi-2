@@ -5,8 +5,8 @@ module.exports = {
   name: 'voiceban',
   description: 'Bans a user from joining voice channels',
   usage: '<user>',
-  permissions: ['MOVE_MEMBERS'],
-  permissionLevel: ['admin'],
+  permissions: ['BAN_MEMBERS'],
+  permissionLevel: ['moderator'],
   execute: async (message, args) => {
     const user = message.mentions.users.first();
 

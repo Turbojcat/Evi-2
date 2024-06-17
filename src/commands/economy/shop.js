@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { getShopCategories, getItems, getRoles, getItemsByCategory, getRolesByCategory, buyItem, buyRole, sellItem, sellRole } = require('../../database/shopdb');
+const { getShopCategories, getShopItems, getRoles, getItemsByCategory, getRolesByCategory, buyItem, buyRole, sellItem, sellRole } = require('../../database/shopdb');
 const { addItem, removeItem } = require('../../database/inventorydb');
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
     const userId = message.author.id;
 
     const categories = await getShopCategories(guildId);
-    const items = await getItems(guildId);
+    const items = await getShopItems(guildId);
     const roles = await getRoles(guildId);
 
     let currentPage = 0;
@@ -168,12 +168,17 @@ module.exports = {
         const role = roles.find((role) => role.id === parseInt(roleId));
 
         if (role) {
-          const success = await buyRole(userId, role.id);
-          if (success) {
-            await interaction.member.roles.add(role.roleId);
-            await interaction.reply(`You have successfully purchased the role "${role.name}".`);
+          const guildRole = message.guild.roles.cache.get(role.roleId);
+          if (guildRole) {
+            const success = await buyRole(userId, role.id);
+            if (success) {
+              await interaction.member.roles.add(guildRole);
+              await interaction.reply(`You have successfully purchased the role "${role.name}".`);
+            } else {
+              await interaction.reply('You do not have enough coins to buy this role.');
+            }
           } else {
-            await interaction.reply('You do not have enough coins to buy this role.');
+            await interaction.reply('The role does not exist in this server.');
           }
         }
       } else if (interaction.customId.startsWith('sellItem_')) {
@@ -194,12 +199,17 @@ module.exports = {
         const role = roles.find((role) => role.id === parseInt(roleId));
 
         if (role) {
-          const success = await sellRole(userId, role.id);
-          if (success) {
-            await interaction.member.roles.remove(role.roleId);
-            await interaction.reply(`You have successfully sold the role "${role.name}".`);
+          const guildRole = message.guild.roles.cache.get(role.roleId);
+          if (guildRole) {
+            const success = await sellRole(userId, role.id);
+            if (success) {
+              await interaction.member.roles.remove(guildRole);
+              await interaction.reply(`You have successfully sold the role "${role.name}".`);
+            } else {
+              await interaction.reply('You do not have this role.');
+            }
           } else {
-            await interaction.reply('You do not have this role.');
+            await interaction.reply('The role does not exist in this server.');
           }
         }
       }

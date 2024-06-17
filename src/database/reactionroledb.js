@@ -21,7 +21,6 @@ const createReactionRoleTable = () => {
     if (error) {
       console.error('Error creating reaction_roles table:', error);
     } else {
-      console.log('reaction_roles table created successfully');
     }
   });
 };
@@ -29,7 +28,6 @@ const createReactionRoleTable = () => {
 const addReactionRole = (guildId, messageId, emoji, roleId, userId, isPremium) => {
   return new Promise((resolve, reject) => {
     const emojiIdentifier = emoji.id || emoji.name || emoji;
-    console.log('Emoji Identifier:', emojiIdentifier);
     pool.query(
       'INSERT INTO reaction_roles (guild_id, message_id, emoji, role_id, user_id, is_premium) VALUES (?, ?, ?, ?, ?, ?)',
       [guildId, messageId, emojiIdentifier, roleId, userId, isPremium],
@@ -48,7 +46,6 @@ const addReactionRole = (guildId, messageId, emoji, roleId, userId, isPremium) =
 const removeReactionRole = (guildId, messageId, emoji) => {
   return new Promise((resolve, reject) => {
     const emojiIdentifier = emoji.id || emoji.name || emoji;
-    console.log('Emoji Identifier:', emojiIdentifier);
     pool.query(
       'DELETE FROM reaction_roles WHERE guild_id = ? AND message_id = ? AND emoji = ? COLLATE utf8mb4_bin',
       [guildId, messageId, emojiIdentifier],
@@ -108,7 +105,6 @@ const getReactionRoles = (guildId, messageId) => {
           console.error('Error getting reaction roles:', error);
           reject(error);
         } else {
-          console.log('Reaction Roles from DB:', results);
           resolve(results);
         }
       }
@@ -119,7 +115,6 @@ const getReactionRoles = (guildId, messageId) => {
 const removeReactionRoleByUser = (guildId, messageId, emoji, userId) => {
   return new Promise((resolve, reject) => {
     const emojiIdentifier = emoji.id || emoji.name || emoji;
-    console.log('Emoji Identifier:', emojiIdentifier);
     pool.query(
       'DELETE FROM reaction_roles WHERE guild_id = ? AND message_id = ? AND emoji = ? COLLATE utf8mb4_bin AND user_id = ?',
       [guildId, messageId, emojiIdentifier, userId],

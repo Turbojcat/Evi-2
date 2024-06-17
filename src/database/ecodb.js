@@ -12,7 +12,6 @@ async function createEconomyTable() {
         UNIQUE KEY unique_user_balance (guildId, userId)
       )
     `);
-    console.log('Economy table created or already exists.');
   } catch (error) {
     console.error('Error creating economy table:', error);
   }
@@ -28,7 +27,6 @@ async function createEcoSettingsTable() {
         PRIMARY KEY (guild_id, setting_name)
       ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     `);
-    console.log('Eco settings table created or already exists.');
   } catch (error) {
     console.error('Error creating eco_settings table:', error);
   }

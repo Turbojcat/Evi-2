@@ -238,28 +238,6 @@ async function setCustomCommandLimit(guildId, limit) {
   }
 }
 
-async function createUserProfilesTable() {
-  try {
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS user_profiles (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL,
-        guild_id VARCHAR(255) NOT NULL,
-        about_me TEXT,
-        links JSON,
-        birthday VARCHAR(255),
-        location VARCHAR(255),
-        interests JSON,
-        story TEXT,
-        UNIQUE KEY unique_user_profile (user_id, guild_id)
-      )
-    `);
-    console.log('User profiles table created or already exists.');
-  } catch (error) {
-    console.error('Error creating user_profiles table:', error);
-  }
-}
-
 module.exports = {
   pool,
   setupDatabase,
@@ -278,5 +256,4 @@ module.exports = {
   getCustomCommands,
   getCustomCommandLimit,
   setCustomCommandLimit,
-  createUserProfilesTable,
 };

@@ -5,7 +5,7 @@ module.exports = {
   name: 'warn',
   description: 'Issues a warning to a user',
   usage: '<user> [reason]',
-  permissions: [],
+  permissions: ['MANAGE_MESSAGES'],
   permissionLevel: ['moderator'],
   execute: async (message, args) => {
     const user = message.mentions.users.first();

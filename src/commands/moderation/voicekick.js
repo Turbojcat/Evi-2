@@ -5,7 +5,7 @@ module.exports = {
   name: 'voicekick',
   description: 'Kicks a user from a voice channel',
   usage: '<user>',
-  permissions: ['MOVE_MEMBERS'],
+  permissions: ['MKICK_MEMBERS'],
   permissionLevel: ['moderator'],
   execute: async (message, args) => {
     const user = message.mentions.users.first();

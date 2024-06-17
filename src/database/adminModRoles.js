@@ -12,7 +12,6 @@ async function createAdminModRolesTable() {
         UNIQUE KEY unique_role_permission (guild_id, role_id)
       )
     `);
-    console.log('Admin mod roles table created or already exists.');
   } catch (error) {
     console.error('Error creating admin_mod_roles table:', error);
   }

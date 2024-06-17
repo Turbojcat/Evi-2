@@ -12,7 +12,6 @@ async function createWelcomeLeaveTable() {
         leave_message TEXT
       )
     `);
-    console.log('Welcome leave table created or already exists.');
   } catch (error) {
     console.error('Error creating welcome_leave table:', error);
   }

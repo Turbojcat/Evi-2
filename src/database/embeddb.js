@@ -15,7 +15,6 @@ async function createEmbedTable() {
       )
     `);
     connection.release();
-    console.log('Custom embeds table created or already exists.');
   } catch (error) {
     console.error('Error creating custom embeds table:', error);
   }

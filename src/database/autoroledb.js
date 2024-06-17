@@ -12,7 +12,6 @@ async function createAutoRoleTable() {
         UNIQUE KEY unique_auto_role (guild_id, role_id)
       )
     `);
-    console.log('Auto roles table created or already exists.');
   } catch (error) {
     console.error('Error creating auto_roles table:', error);
   }

@@ -5,11 +5,10 @@ const { Collection } = require('discord.js');
 const { prefix } = require('../config');
 const { hasPremiumSubscription, getRolePermissionLevel, executeCustomCommand } = require('../database/database');
 
-
 class CommandHandler {
   constructor(client) {
     this.client = client;
-    this.commands = {};
+    this.commands = new Collection();
     this.slashCommands = new Collection();
     this.cooldowns = new Collection();
   }
@@ -23,13 +22,13 @@ class CommandHandler {
         this.slashCommands.set(command.data.name, command);
       }
       if (command.name) {
-        this.commands[command.name] = command;
+        this.commands.set(command.name, command);
         if (command.aliases) {
           command.aliases.forEach((alias) => {
-            if (!this.commands[alias]) {
-              this.commands[alias] = command;
+            if (!this.commands.has(alias)) {
+              this.commands.set(alias, command);
             } else {
-              const conflictingCommand = this.commands[alias];
+              const conflictingCommand = this.commands.get(alias);
               console.warn(`Alias "${alias}" for command "${command.name}" conflicts with command "${conflictingCommand.name}". Skipping...`);
             }
           });
@@ -61,8 +60,7 @@ class CommandHandler {
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
 
-
-    const command = this.commands[commandName] || Object.values(this.commands).find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+    const command = this.commands.get(commandName) || this.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
     if (!command) {
       const customResponse = await executeCustomCommand(message.guild.id, commandName);
@@ -73,8 +71,9 @@ class CommandHandler {
       }
     }
 
-
+    console.log(`Checking premium subscription for user: ${message.author.id}`);
     const isPremiumUser = await hasPremiumSubscription(message.author.id);
+    console.log(`isPremiumUser: ${isPremiumUser}`);
 
     if (command.premium && !isPremiumUser) {
       return message.channel.send('This command is only available for premium users.');
@@ -108,8 +107,9 @@ class CommandHandler {
       return;
     }
 
-
+    console.log(`Checking premium subscription for user: ${interaction.user.id}`);
     const isPremiumUser = await hasPremiumSubscription(interaction.user.id);
+    console.log(`isPremiumUser: ${isPremiumUser}`);
 
     if (command.premium && !isPremiumUser) {
       return interaction.reply({ content: 'This command is only available for premium users.', ephemeral: true });
@@ -156,7 +156,7 @@ class CommandHandler {
     setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
     try {
-      command.execute(message, args, this.client, this.commands, this.slashCommands);
+      command.execute(message, args, this.client);
     } catch (error) {
       console.error('Error executing command:', error);
       message.channel.send('There was an error trying to execute that command!');
@@ -185,19 +185,12 @@ class CommandHandler {
     setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
 
     try {
-      await command.executeSlash(interaction, this.client, this.commands, this.slashCommands);
+      await command.executeSlash(interaction, this.client);
     } catch (error) {
       console.error('Error executing slash command:', error);
       await interaction.reply({ content: 'There was an error trying to execute that command!', ephemeral: true });
     }
   }
-
-  getCommandStats() {
-    const commandCount = Object.keys(this.commands).length;
-    const aliasCount = Object.values(this.commands).reduce((acc, cmd) => acc + (cmd.aliases ? cmd.aliases.length : 0), 0);
-    return { commandCount, aliasCount };
-  }
 }
 
 module.exports = CommandHandler;
-module.exports.commands = (commandHandler) => commandHandler.commands;

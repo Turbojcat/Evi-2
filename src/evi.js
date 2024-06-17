@@ -5,7 +5,8 @@ const { Routes } = require('discord.js');
 const { token, suggestionChannelId, approvedSuggestionChannelId, deniedSuggestionChannelId } = require('./config');
 const CommandHandler = require('./handler/commandHandler');
 const path = require('path');
-const { setupDatabase, createUserProfilesTable } = require('./database/database');
+const { setupDatabase } = require('./database/database');
+const { createUserProfilesTable } = require('./database/userProfiles');
 const { createWikiPageTable } = require('./database/wiki');
 const { createWelcomeLeaveTable, getWelcomeMessage, getLeaveMessage } = require('./database/welcomeLeave');
 const { replacePlaceholders } = require('./placeholders');
@@ -17,8 +18,10 @@ const { createAutoRoleTable } = require('./database/autoroledb');
 const { getAutoRoles } = require('./database/autoroledb');
 const { createEconomyTable, createEcoSettingsTable } = require('./database/ecodb');
 const { createEmbedTable } = require('./database/embeddb');
-const { setupInventoryDatabase } = require('./database/inventorydb');
-const { createShopItemTable, createShopCategoryTable, createShopPurchaseTable, dropShopItemTable } = require('./database/shopdb');
+const { createShopItemTable, createShopCategoryTable, addDescriptionColumnToShopCategories, createShopPurchaseTable, createShopRoleTable } = require('./database/shopdb');
+const { checkMessageForBannedWords, checkMessageForSpam, checkMessageForLinks } = require('./commands/moderation/automod');
+const { createAutoModTables } = require('./database/automoddb');
+const { createModerationTables } = require('./database/moderationdb'); // Import createModerationTables
 
 const client = new Client({
   intents: [
@@ -43,9 +46,11 @@ const activities = [
 let currentActivity = 0;
 
 function updateActivity() {
-  const { commandCount, aliasCount } = commandHandler.getCommandStats();
-  activities[1] = { type: ActivityType.Listening, name: `${commandCount} Commands & ${aliasCount} Alias!` };
-  activities[2] = { type: ActivityType.Watching, name: `In ${client.guilds.cache.size} server & Watching ${client.users.cache.size}!` };
+  const commandCount = commandHandler.commands.size + commandHandler.slashCommands.size;
+  const aliasCount = [...commandHandler.commands.values()].reduce((acc, cmd) => acc + (cmd.aliases ? cmd.aliases.length : 0), 0);
+
+  activities[1] = { type: ActivityType.Listening, name: `${commandCount} Commands & ${aliasCount} Aliases!` };
+  activities[2] = { type: ActivityType.Watching, name: `In ${client.guilds.cache.size} servers & Watching ${client.users.cache.size} users!` };
   activities[3] = { type: ActivityType.Competing, name: 'For support join Evi\'s support server! !support' };
 
   const activity = activities[currentActivity];
@@ -107,46 +112,32 @@ client.once('ready', async () => {
 
   try {
     await setupDatabase();
-    console.log('Database tables created successfully');
   } catch (error) {
     console.error('Error setting up database:', error);
   }
 
-  createUserProfilesTable();
-  createWikiPageTable();
-  createWelcomeLeaveTable();
-  createAdminModRolesTable();
-  createSuggestionTable();
-  createAutoRoleTable();
-  createEconomyTable();
-  createEcoSettingsTable();
-
   try {
+    await createUserProfilesTable();
+    await createWikiPageTable();
+    await createWelcomeLeaveTable();
+    await createAdminModRolesTable();
+    await createSuggestionTable();
+    await createAutoRoleTable();
+    await createEconomyTable();
+    await createEcoSettingsTable();
     await createEmbedTable();
-    console.log('Custom embeds table created successfully');
-  } catch (error) {
-    console.error('Error creating custom embeds table:', error);
-  }
-
-  try {
-    await setupInventoryDatabase();
-    console.log('Inventory database setup completed');
-  } catch (error) {
-    console.error('Error setting up inventory database:', error);
-  }
-
-  try {
-    await createShopCategoryTable();
-    await dropShopItemTable();
     await createShopItemTable();
+    await createShopCategoryTable();
+    await addDescriptionColumnToShopCategories();
     await createShopPurchaseTable();
-    console.log('Shop tables created successfully');
+    await createShopRoleTable();
+    await createAutoModTables();
+    await createModerationTables(); // Call createModerationTables
   } catch (error) {
-    console.error('Error creating shop tables:', error);
+    console.error('Error creating tables:', error);
   }
 
-  const { commandCount, aliasCount } = commandHandler.getCommandStats();
-  console.log(`${client.user.tag} (${client.user.id}) is ready with ${commandCount} commands and ${aliasCount} aliases, serving ${client.guilds.cache.size} servers and ${client.users.cache.size} users!`);
+  console.log(`${client.user.tag} (${client.user.id}) is ready, serving ${client.guilds.cache.size} servers and ${client.users.cache.size} users!`);
 
   const rest = new REST({ version: '10' }).setToken(token);
 
@@ -165,8 +156,11 @@ client.once('ready', async () => {
   }, 30 * 1000); // Check for new suggestions every 30 seconds
 });
 
-client.on('messageCreate', (message) => {
+client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
+  await checkMessageForBannedWords(message);
+  await checkMessageForSpam(message);
+  await checkMessageForLinks(message);
   commandHandler.handleCommand(message);
 });
 
@@ -233,7 +227,7 @@ client.on('guildMemberAdd', async (member) => {
   const welcomeMessage = await getWelcomeMessage(guildId);
 
   if (welcomeMessage) {
-    const replacedMessage = replacePlaceholders(member, welcomeMessage);
+    const replacedMessage = await replacePlaceholders(member, welcomeMessage);
     const welcomeChannel = member.guild.channels.cache.find(channel => channel.name === 'welcome');
     if (welcomeChannel) {
       welcomeChannel.send(replacedMessage);
@@ -261,7 +255,7 @@ client.on('guildMemberRemove', async (member) => {
   const leaveMessage = await getLeaveMessage(guildId);
 
   if (leaveMessage) {
-    const replacedMessage = replacePlaceholders(member, leaveMessage);
+    const replacedMessage = await replacePlaceholders(member, leaveMessage);
     const leaveChannel = member.guild.channels.cache.find(channel => channel.name === 'leave');
     if (leaveChannel) {
       leaveChannel.send(replacedMessage);
@@ -270,18 +264,12 @@ client.on('guildMemberRemove', async (member) => {
 });
 
 client.on('messageReactionAdd', async (reaction, user) => {
-  console.log('messageReactionAdd event triggered');
-
   if (user.bot) return;
 
   const { message } = reaction;
   const { guild } = message;
 
-  console.log('Guild ID:', guild.id);
-  console.log('Message ID:', message.id);
   const reactionRoles = await getReactionRoles(guild.id, message.id);
-  console.log('Reaction Roles from DB:', reactionRoles);
-  console.log('Reaction Emoji:', reaction.emoji.name);
 
   // Check if the message has any reaction roles set up
   if (reactionRoles.length === 0) return;
@@ -292,14 +280,9 @@ client.on('messageReactionAdd', async (reaction, user) => {
   }
   const reactionRole = reactionRoles.find(rr => rr.emoji === emojiIdentifier);
 
-  console.log('Reaction Role:', reactionRole);
-
   if (reactionRole) {
     const member = await guild.members.fetch(user.id);
-    console.log('Member:', member);
-
     const role = guild.roles.cache.get(reactionRole.role_id);
-    console.log('Role:', role);
 
     if (role && member) {
       await member.roles.add(role);
@@ -308,18 +291,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
 });
 
 client.on('messageReactionRemove', async (reaction, user) => {
-  console.log('messageReactionRemove event triggered');
-
   if (user.bot) return;
 
   const { message } = reaction;
   const { guild } = message;
 
-  console.log('Guild ID:', guild.id);
-  console.log('Message ID:', message.id);
   const reactionRoles = await getReactionRoles(guild.id, message.id);
-  console.log('Reaction Roles from DB:', reactionRoles);
-  console.log('Reaction Emoji:', reaction.emoji.name);
 
   // Check if the message has any reaction roles set up
   if (reactionRoles.length === 0) return;
@@ -330,14 +307,9 @@ client.on('messageReactionRemove', async (reaction, user) => {
   }
   const reactionRole = reactionRoles.find(rr => rr.emoji === emojiIdentifier);
 
-  console.log('Reaction Role:', reactionRole);
-
   if (reactionRole) {
     const member = await guild.members.fetch(user.id);
-    console.log('Member:', member);
-
     const role = guild.roles.cache.get(reactionRole.role_id);
-    console.log('Role:', role);
 
     if (role && member) {
       await member.roles.remove(role);

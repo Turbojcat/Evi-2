@@ -5,7 +5,7 @@ module.exports = {
   name: 'modlog',
   description: 'Displays the moderation log',
   usage: '[page]',
-  permissions: [],
+  permissions: ['ADMINISTRATOR'],
   permissionLevel: ['admin'],
   execute: async (message, args) => {
     const page = parseInt(args[0]) || 1;

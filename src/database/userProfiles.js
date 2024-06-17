@@ -1,45 +1,63 @@
 // src/database/userProfiles.js
 const { pool } = require('./database');
 
-const getUserProfile = async (userId, guildId) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
-      'SELECT * FROM user_profiles WHERE user_id = ? AND guild_id = ?',
-      [userId, guildId],
-      (error, results) => {
-        if (error) {
-          console.error('Error retrieving user profile:', error);
-          reject(error);
-        } else {
-          if (results.length > 0) {
-            const profile = results[0];
-            resolve({
-              aboutMe: profile.about_me,
-              links: profile.links ? JSON.parse(profile.links) : [],
-              birthday: profile.birthday,
-              location: profile.location,
-              interests: profile.interests ? JSON.parse(profile.interests) : [],
-              story: profile.story,
-            });
-          } else {
-            resolve({
-              aboutMe: '',
-              links: [],
-              birthday: '',
-              location: '',
-              interests: [],
-              story: '',
-            });
-          }
-        }
-      }
-    );
-  });
-};
+async function createUserProfilesTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS user_profiles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        guild_id VARCHAR(255) NOT NULL,
+        about_me TEXT,
+        links JSON,
+        birthday VARCHAR(255),
+        location VARCHAR(255),
+        interests JSON,
+        story TEXT,
+        UNIQUE KEY unique_user_profile (user_id, guild_id)
+      )
+    `);
+    console.log('User profiles table created or already exists.');
+  } catch (error) {
+    console.error('Error creating user_profiles table:', error);
+  }
+}
 
-const updateUserProfile = async (userId, guildId, profileData) => {
-  return new Promise((resolve, reject) => {
-    pool.query(
+async function getUserProfile(userId, guildId) {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT * FROM user_profiles WHERE user_id = ? AND guild_id = ?',
+      [userId, guildId]
+    );
+    if (rows.length > 0) {
+      const profile = rows[0];
+      return {
+        aboutMe: profile.about_me,
+        links: profile.links ? JSON.parse(profile.links) : [],
+        birthday: profile.birthday,
+        location: profile.location,
+        interests: profile.interests ? JSON.parse(profile.interests) : [],
+        story: profile.story,
+      };
+    } else {
+      return {
+        aboutMe: '',
+        links: [],
+        birthday: '',
+        location: '',
+        interests: [],
+        story: '',
+      };
+    }
+  } catch (error) {
+    console.error('Error retrieving user profile:', error);
+    throw error;
+  }
+}
+
+async function updateUserProfile(userId, guildId, profileData) {
+  try {
+    await pool.execute(
       'INSERT INTO user_profiles (user_id, guild_id, about_me, links, birthday, location, interests, story) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE about_me = VALUES(about_me), links = VALUES(links), birthday = VALUES(birthday), location = VALUES(location), interests = VALUES(interests), story = VALUES(story)',
       [
         userId,
@@ -50,20 +68,16 @@ const updateUserProfile = async (userId, guildId, profileData) => {
         profileData.location || null,
         profileData.interests ? JSON.stringify(profileData.interests) : null,
         profileData.story || null,
-      ],
-      (error) => {
-        if (error) {
-          console.error('Error updating user profile:', error);
-          reject(error);
-        } else {
-          resolve();
-        }
-      }
+      ]
     );
-  });
-};
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
+}
 
 module.exports = {
+  createUserProfilesTable,
   getUserProfile,
   updateUserProfile,
 };

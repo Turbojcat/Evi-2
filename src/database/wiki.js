@@ -15,7 +15,6 @@ async function createWikiPageTable() {
         UNIQUE KEY unique_wiki_page (guild_id, page)
       )
     `);
-    console.log('Wiki pages table created or already exists.');
   } catch (error) {
     console.error('Error creating wiki_pages table:', error);
   }

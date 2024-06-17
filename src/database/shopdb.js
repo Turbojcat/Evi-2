@@ -23,9 +23,23 @@ async function createShopCategoryTable() {
       id INT AUTO_INCREMENT PRIMARY KEY,
       guild_id VARCHAR(255) NOT NULL,
       name VARCHAR(255) NOT NULL,
+      description TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+}
+
+async function addDescriptionColumnToShopCategories() {
+  const [rows] = await pool.query(`
+    SHOW COLUMNS FROM shop_categories LIKE 'description'
+  `);
+
+  if (rows.length === 0) {
+    await pool.query(`
+      ALTER TABLE shop_categories
+      ADD COLUMN description TEXT
+    `);
+  }
 }
 
 async function createShopPurchaseTable() {
@@ -57,14 +71,10 @@ async function createShopRoleTable() {
   `);
 }
 
-async function dropShopItemTable() {
-  await pool.query('DROP TABLE IF EXISTS shop_items');
-}
-
-async function addShopCategory(guildId, name) {
+async function addShopCategory(guildId, name, description) {
   const [result] = await pool.query(
-    'INSERT INTO shop_categories (guild_id, name) VALUES (?, ?)',
-    [guildId, name]
+    'INSERT INTO shop_categories (guild_id, name, description) VALUES (?, ?, ?)',
+    [guildId, name, description]
   );
   return result.insertId;
 }
@@ -87,8 +97,8 @@ async function getShopCategory(categoryId) {
 
 async function updateShopCategory(categoryId, name, description) {
   await pool.query(
-    'UPDATE shop_categories SET name = ? WHERE id = ?',
-    [name, categoryId]
+    'UPDATE shop_categories SET name = ?, description = ? WHERE id = ?',
+    [name, description, categoryId]
   );
 }
 
@@ -100,13 +110,12 @@ async function deleteShopCategory(categoryId) {
 }
 
 async function addShopItem(guildId, categoryId, name, description, price, imageUrl) {
-    const [result] = await pool.query(
-      'INSERT INTO shop_items (guild_id, category_id, name, description, price, image_url) VALUES (?, ?, ?, ?, ?, ?)',
-      [guildId, categoryId, name, description, price, imageUrl]
-    );
-    return result.insertId;
-  }
-  
+  const [result] = await pool.query(
+    'INSERT INTO shop_items (guild_id, category_id, name, description, price, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+    [guildId, categoryId, name, description, price, imageUrl]
+  );
+  return result.insertId;
+}
 
 async function getShopItems(guildId) {
   const [rows] = await pool.query(
@@ -125,12 +134,11 @@ async function getShopItem(itemId) {
 }
 
 async function updateShopItem(itemId, categoryId, name, description, price, imageUrl) {
-    await pool.query(
-      'UPDATE shop_items SET category_id = ?, name = ?, description = ?, price = ?, image_url = ? WHERE id = ?',
-      [categoryId, name, description, price, imageUrl, itemId]
-    );
-  }
-  
+  await pool.query(
+    'UPDATE shop_items SET category_id = ?, name = ?, description = ?, price = ?, image_url = ? WHERE id = ?',
+    [categoryId, name, description, price, imageUrl, itemId]
+  );
+}
 
 async function deleteShopItem(itemId) {
   await pool.query(
@@ -148,13 +156,12 @@ async function getItemsByCategory(guildId, categoryId) {
 }
 
 async function addShopRole(guildId, categoryId, roleId, name, description, price) {
-    const [result] = await pool.query(
-      'INSERT INTO shop_roles (guild_id, category_id, role_id, name, description, price) VALUES (?, ?, ?, ?, ?, ?)',
-      [guildId, categoryId, roleId, name, description, price]
-    );
-    return result.insertId;
-  }
-  
+  const [result] = await pool.query(
+    'INSERT INTO shop_roles (guild_id, category_id, role_id, name, description, price) VALUES (?, ?, ?, ?, ?, ?)',
+    [guildId, categoryId, roleId, name, description, price]
+  );
+  return result.insertId;
+}
 
 async function getRoles(guildId) {
   const [rows] = await pool.query(
@@ -260,9 +267,9 @@ async function getCategoryCount(guildId) {
 module.exports = {
   createShopItemTable,
   createShopCategoryTable,
+  addDescriptionColumnToShopCategories,
   createShopPurchaseTable,
   createShopRoleTable,
-  dropShopItemTable,
   addShopCategory,
   getShopCategories,
   getShopCategory,
